@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* White */
+    --foreground: 208 100% 10%; /* Dark Blue Text */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 208 100% 10%; /* Dark Blue Text */
+
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 208 100% 10%; /* Dark Blue Text */
+
+    --primary: 208 100% 30%; /* University Blue #004D98 */
+    --primary-foreground: 0 0% 100%; /* White */
+
+    --secondary: 0 0% 95%; /* Light Grey #F2F2F2 */
+    --secondary-foreground: 208 100% 30%; /* University Blue */
+
+    --muted: 0 0% 95%; /* Light Grey #F2F2F2 */
+    --muted-foreground: 208 30% 40%; /* Muted Blue Text */
+
+    --accent: 180 100% 25%; /* Teal #008080 */
+    --accent-foreground: 0 0% 100%; /* White */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 85%; /* Grey Border */
+    --input: 0 0% 85%; /* Grey Input Border */
+    --ring: 208 100% 30%; /* University Blue for focus */
+
+    --radius: 0.5rem;
+
+    /* Sidebar Light Theme */
+    --sidebar-background: 208 100% 30%; /* University Blue */
+    --sidebar-foreground: 0 0% 100%; /* White */
+    --sidebar-primary: 0 0% 100%; /* White for active item text/icon */
+    --sidebar-primary-foreground: 208 100% 30%; /* University Blue (used if active item itself has a bg) */
+    --sidebar-accent: 208 100% 40%; /* Lighter University Blue for hover */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
+    --sidebar-border: 208 100% 25%; /* Darker University Blue */
+    --sidebar-ring: 0 0% 100%; /* White for focus ring */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 210 20% 12%; /* Dark Desaturated Blue */
+    --foreground: 0 0% 95%; /* Light Grey Text */
+
+    --card: 210 20% 15%; /* Slightly Lighter Dark Blue */
+    --card-foreground: 0 0% 95%; /* Light Grey Text */
+
+    --popover: 210 20% 15%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 208 100% 50%; /* Brighter University Blue */
+    --primary-foreground: 210 20% 12%; /* Dark Background color */
+
+    --secondary: 210 20% 18%; /* Darker Grey Blue */
+    --secondary-foreground: 0 0% 95%; /* Light Grey Text */
+
+    --muted: 210 20% 18%;
+    --muted-foreground: 0 0% 60%; /* Lighter Muted Grey */
+
+    --accent: 180 100% 35%; /* Brighter Teal */
+    --accent-foreground: 210 20% 12%; /* Dark Background color */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 25%; /* Dark Grey Blue Border */
+    --input: 210 20% 25%;
+    --ring: 208 100% 50%; /* Brighter University Blue for focus */
+    
+    /* Sidebar Dark Theme */
+    --sidebar-background: 210 20% 10%; /* Very Dark Blue */
+    --sidebar-foreground: 0 0% 90%; /* Light Grey */
+    --sidebar-primary: 180 100% 40%; /* Teal for active item text/icon */
+    --sidebar-primary-foreground: 0 0% 98%; /* White Text */
+    --sidebar-accent: 210 20% 20%; /* Darker hover */
+    --sidebar-accent-foreground: 0 0% 98%; /* White */
+    --sidebar-border: 210 20% 22%; /* Slightly lighter border */
+    --sidebar-ring: 180 100% 40%; /* Teal for focus ring */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
