@@ -1,16 +1,18 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Users } from "lucide-react";
+import { PlusCircle, Users, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { clubCategories } from "@/lib/mock-data";
 
@@ -27,6 +29,9 @@ type CreateClubFormValues = z.infer<typeof createClubFormSchema>;
 
 export default function CreateClubPage() {
   const { toast } = useToast();
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+
   const form = useForm<CreateClubFormValues>({
     resolver: zodResolver(createClubFormSchema),
     defaultValues: {
@@ -36,10 +41,26 @@ export default function CreateClubPage() {
     },
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "logo" | "bannerImage") => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (fieldName === 'logo') {
+          setLogoPreview(reader.result as string);
+        } else {
+          setBannerPreview(reader.result as string);
+        }
+        form.setValue(fieldName, file);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   function onSubmit(data: CreateClubFormValues) {
     console.log("Create club data (simulated):", {
         ...data,
-        logo: data.logo?.[0]?.name, // In a real app, you'd upload the file
+        logo: data.logo?.[0]?.name,
         bannerImage: data.bannerImage?.[0]?.name,
     });
     toast({
@@ -47,7 +68,17 @@ export default function CreateClubPage() {
       description: "The new club has been added to the directory.",
     });
     form.reset();
+    setLogoPreview(null);
+    setBannerPreview(null);
   }
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+    };
+  }, [logoPreview, bannerPreview]);
 
   return (
     <div className="container mx-auto py-8">
@@ -119,42 +150,63 @@ export default function CreateClubPage() {
                   </FormItem>
                 )}
               />
+              
+              {/* Logo Upload with Preview */}
               <FormField
                 control={form.control}
                 name="logo"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Logo</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={(e) => field.onChange(e.target.files)}
-                      />
-                    </FormControl>
-                    <FormDescription>Upload an image for your club's logo.</FormDescription>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 rounded-md border border-dashed flex items-center justify-center bg-muted">
+                        {logoPreview ? (
+                          <Image src={logoPreview} alt="Logo preview" width={96} height={96} className="object-cover rounded-md" data-ai-hint="logo preview"/>
+                        ) : (
+                          <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                        )}
+                      </div>
+                      <FormControl className="flex-1">
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => handleFileChange(e, 'logo')}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormDescription>Upload an image for your club's logo (1:1 ratio recommended).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Banner Image Upload with Preview */}
               <FormField
                 control={form.control}
                 name="bannerImage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Banner Image (Optional)</FormLabel>
-                    <FormControl>
+                     <div className="w-full h-32 rounded-md border border-dashed flex items-center justify-center bg-muted">
+                        {bannerPreview ? (
+                          <Image src={bannerPreview} alt="Banner preview" layout="fill" className="object-cover rounded-md" data-ai-hint="banner preview"/>
+                        ) : (
+                          <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                        )}
+                      </div>
+                    <FormControl className="mt-2">
                        <Input 
                         type="file" 
                         accept="image/*"
-                        onChange={(e) => field.onChange(e.target.files)}
+                        onChange={(e) => handleFileChange(e, 'bannerImage')}
                       />
                     </FormControl>
-                    <FormDescription>Upload a banner image for your club page.</FormDescription>
+                    <FormDescription>Upload a banner image for your club page (16:9 ratio recommended).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="meetingSchedule"
@@ -180,3 +232,5 @@ export default function CreateClubPage() {
     </div>
   );
 }
+
+    
