@@ -11,11 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogIn, Loader2, Info } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { mockUsers } from "@/lib/mock-data";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const loginFormSchema = z.object({
@@ -136,25 +135,6 @@ export default function LoginPage() {
             </form>
           </Form>
         </Card>
-
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Test Credentials</AlertTitle>
-          <AlertDescription>
-            <p>Use these mock accounts to test different roles. Any password will work.</p>
-            <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground space-y-1">
-              {mockUsers.map(user => (
-                  <li key={user.id}>
-                    <strong>{user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {user.email}
-                  </li>
-              ))}
-            </ul>
-             <p className="mt-3 text-xs">
-                Note: In this simulation, the sidebar links are controlled by the `userRole` variable in `/src/components/layout/sidebar-nav.tsx`. For full role testing, you would set that variable to match the user you are logging in as.
-            </p>
-          </AlertDescription>
-        </Alert>
-
       </div>
     </div>
   );
