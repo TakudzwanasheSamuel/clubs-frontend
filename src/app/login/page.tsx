@@ -45,16 +45,28 @@ export default function LoginPage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Find user to display the correct role in toast
+    // Find user to determine their role
     const user = mockUsers.find(u => u.email === data.email);
-    const role = user ? user.role.replace('_', ' ') : 'user';
+    const role = user ? user.role : 'student'; // Default to 'student' if not found
+    const roleName = user ? user.role.replace('_', ' ') : 'user';
 
     toast({
       title: "Login Successful!",
-      description: `Welcome! You are logged in as a ${role}. Redirecting...`,
+      description: `Welcome! You are logged in as a ${roleName}. Redirecting...`,
     });
+    
+    // Redirect based on role
+    if (role === 'admin') {
+      router.push('/admin/dashboard');
+    } else if (role === 'club_lead') {
+      router.push('/my-club-management');
+    } else {
+      router.push('/clubs-directory'); 
+    }
 
-    router.push('/clubs-directory'); 
+    // It's good practice to not set state on an unmounted component,
+    // but in this simulation, the redirect is fast.
+    // In a real app with server-side auth, you'd handle this differently.
     setIsSubmitting(false);
   }
 
@@ -138,7 +150,7 @@ export default function LoginPage() {
               ))}
             </ul>
              <p className="mt-3 text-xs">
-                Note: To see the correct sidebar links after logging in, you need to manually change the `userRole` variable in `/src/components/layout/sidebar-nav.tsx` to `'admin'`, `'club_lead'`, or `'student'`.
+                Note: In this simulation, the sidebar links are controlled by the `userRole` variable in `/src/components/layout/sidebar-nav.tsx`. For full role testing, you would set that variable to match the user you are logging in as.
             </p>
           </AlertDescription>
         </Alert>
