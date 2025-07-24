@@ -11,9 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { mockUsers } from "@/lib/mock-data";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -42,9 +45,13 @@ export default function LoginPage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Find user to display the correct role in toast
+    const user = mockUsers.find(u => u.email === data.email);
+    const role = user ? user.role.replace('_', ' ') : 'user';
+
     toast({
       title: "Login Successful!",
-      description: "Welcome to myCampus. Redirecting to Club Directory...",
+      description: `Welcome! You are logged in as a ${role}. Redirecting...`,
     });
 
     router.push('/clubs-directory'); 
@@ -53,69 +60,90 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="space-y-1 text-center">
-          <LogIn className="mx-auto h-10 w-10 text-primary" />
-          <CardTitle className="text-3xl font-bold tracking-tight">Welcome Back!</CardTitle>
-          <CardDescription>Sign in to access your myCampus account.</CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} disabled={isSubmitting}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
-                      <Link href="#" className="text-sm text-primary hover:underline">
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing In...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-5 w-5" /> Sign In
-                  </>
-                )}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="font-medium text-primary hover:underline">
-                  Sign up
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
+      <div className="w-full max-w-md space-y-8">
+        <Card className="shadow-xl">
+          <CardHeader className="space-y-1 text-center">
+            <LogIn className="mx-auto h-10 w-10 text-primary" />
+            <CardTitle className="text-3xl font-bold tracking-tight">Welcome Back!</CardTitle>
+            <CardDescription>Sign in to access your myCampus account.</CardDescription>
+          </CardHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="you@example.com" {...field} disabled={isSubmitting}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Password</FormLabel>
+                        <Link href="#" className="text-sm text-primary hover:underline">
+                          Forgot password?
+                        </Link>
+                      </div>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} disabled={isSubmitting}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing In...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-5 w-5" /> Sign In
+                    </>
+                  )}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Don&apos;t have an account?{" "}
+                  <Link href="/register" className="font-medium text-primary hover:underline">
+                    Sign up
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Test Credentials</AlertTitle>
+          <AlertDescription>
+            <p>Use these mock accounts to test different roles. Any password will work.</p>
+            <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground space-y-1">
+              {mockUsers.map(user => (
+                  <li key={user.id}>
+                    <strong>{user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {user.email}
+                  </li>
+              ))}
+            </ul>
+             <p className="mt-3 text-xs">
+                Note: To see the correct sidebar links after logging in, you need to manually change the `userRole` variable in `/src/components/layout/sidebar-nav.tsx` to `'admin'`, `'club_lead'`, or `'student'`.
+            </p>
+          </AlertDescription>
+        </Alert>
+
+      </div>
     </div>
   );
 }

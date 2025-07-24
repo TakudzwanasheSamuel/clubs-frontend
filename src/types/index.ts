@@ -60,6 +60,6 @@ export type User = {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'super_admin' | 'sdo_admin' | 'club_lead' | 'student';
+  role: 'admin' | 'club_lead' | 'student';
   profilePictureUrl?: string;
 };

@@ -1,4 +1,4 @@
-import type { Club, Event, Post, ClubCategory } from '@/types';
+import type { Club, Event, Post, ClubCategory, User } from '@/types';
 
 export const clubCategories: ClubCategory[] = [
   { id: '1', name: 'Academic', icon: 'BookOpen' },
@@ -8,6 +8,31 @@ export const clubCategories: ClubCategory[] = [
   { id: '5', name: 'Technology', icon: 'Laptop' },
   { id: '6', name: 'Business & Entrepreneurship', icon: 'Briefcase' },
 ];
+
+export const mockUsers: User[] = [
+  {
+    id: 'user-admin',
+    firstName: 'Admin',
+    lastName: 'User',
+    email: 'admin@mycampus.com',
+    role: 'admin',
+  },
+  {
+    id: 'user-lead',
+    firstName: 'Club',
+    lastName: 'Lead',
+    email: 'lead@mycampus.com',
+    role: 'club_lead',
+  },
+  {
+    id: 'user-student',
+    firstName: 'Student',
+    lastName: 'User',
+    email: 'student@mycampus.com',
+    role: 'student',
+  }
+];
+
 
 export const mockClubs: Club[] = [
   {
@@ -21,7 +46,7 @@ export const mockClubs: Club[] = [
     socialLinks: { facebook: '#', instagram: '#', twitter: '#', website: '#' },
     meetingSchedule: 'Wednesdays, 6 PM - 8 PM, Tech Hub Room 101',
     memberCount: 120,
-    userId: 'user123', // Example userId of the club creator/lead
+    userId: 'user-lead', // Example userId of the club creator/lead
   },
   {
     id: '2',
