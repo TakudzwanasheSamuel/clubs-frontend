@@ -5,21 +5,36 @@ import { useState, useEffect } from 'react';
 import { mockEvents, mockClubs } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, notFound } from 'next/navigation'; 
+import { useParams, notFound, useRouter } from 'next/navigation'; 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, MapPin, Users, Info, Clock, Loader2, Check } from 'lucide-react';
+import { CalendarDays, MapPin, Users, Info, Clock, Loader2, Check, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function EventDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = typeof params.slug === 'string' ? params.slug : '';
 
   const [isRsvpd, setIsRsvpd] = useState(false);
   const [isProcessingRsvp, setIsProcessingRsvp] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
   const { toast } = useToast();
+
+  // Simulate user role. In a real app, this would come from an auth context.
+  const userRole = 'admin'; // Change to 'student' or 'club_lead' to hide the button
 
   const event = mockEvents.find(e => e.slug === slug || e.id === slug);
 
@@ -60,6 +75,18 @@ export default function EventDetailPage() {
         : `Your RSVP for "${event.title}" has been cancelled.`,
       variant: "default",
     });
+  };
+
+  const handleDeleteEvent = async () => {
+    console.log(`Admin deleted event: ${event.title} (simulated)`);
+    // Here you would call your API to delete the event
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    toast({
+        title: "Event Deleted",
+        description: `The event "${event.title}" has been successfully deleted.`,
+        variant: "destructive"
+    });
+    router.push('/events');
   };
 
   return (
@@ -144,7 +171,7 @@ export default function EventDetailPage() {
                 )}
               </div>
 
-              <div className="mt-8">
+              <div className="mt-8 flex items-center gap-4">
                 <Button
                   size="lg"
                   className="w-full md:w-auto"
@@ -163,12 +190,36 @@ export default function EventDetailPage() {
                       ? "Cancel RSVP"
                       : "RSVP to this Event"}
                 </Button>
-                {(event.status === 'past' || event.status === 'cancelled') && (
+                {userRole === 'admin' && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="lg">
+                        <Trash2 className="mr-2 h-5 w-5" /> Delete Event
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the event
+                          "{event.title}" and remove its data from our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteEvent}>
+                          Yes, delete event
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+               {(event.status === 'past' || event.status === 'cancelled') && (
                   <p className="text-sm text-muted-foreground mt-2">
                     RSVPs are closed for this event as it is {event.status}.
                   </p>
                 )}
-              </div>
             </CardContent>
           </Card>
         </div>
