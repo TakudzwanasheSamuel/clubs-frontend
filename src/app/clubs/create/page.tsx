@@ -18,7 +18,7 @@ const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }).optional().or(z.literal('')),
+  logoUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
   meetingSchedule: z.string().max(100).optional(),
 });
@@ -41,8 +41,8 @@ export default function CreateClubPage() {
   function onSubmit(data: CreateClubFormValues) {
     console.log("Create club data:", data);
     toast({
-      title: "Club Creation Submitted (Simulated)",
-      description: "In a real app, this would go through an approval process.",
+      title: "Club Created (Simulated)",
+      description: "The new club has been added to the directory.",
     });
     form.reset();
   }
@@ -51,16 +51,16 @@ export default function CreateClubPage() {
     <div className="container mx-auto py-8">
       <div className="flex items-center mb-6">
         <Users className="h-8 w-8 text-primary mr-3" />
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Propose a New Club</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Club</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Fill out the form below to start a new club. Your proposal will be reviewed.
+        Fill out the form below to create a new club. This will be immediately visible in the directory.
       </p>
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <PlusCircle className="h-6 w-6 text-primary" />
-            Club Proposal Form
+            New Club Form
           </CardTitle>
           <CardDescription>Provide details about the club you want to create.</CardDescription>
         </CardHeader>
@@ -161,7 +161,7 @@ export default function CreateClubPage() {
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Submitting..." : "Submit Proposal"}
+                {form.formState.isSubmitting ? "Creating Club..." : "Create Club"}
               </Button>
             </CardFooter>
           </form>

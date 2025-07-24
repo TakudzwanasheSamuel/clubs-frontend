@@ -1,5 +1,5 @@
 
-import { ShieldCheck, Users, BarChart3, Settings } from 'lucide-react';
+import { ShieldCheck, Users, BarChart3, Settings, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -54,7 +54,12 @@ export default function AdminDashboardPage() {
                 <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-                <Button className="w-full" asChild><Link href="/admin/manage-clubs">Manage Clubs</Link></Button>
+                <Button className="w-full" asChild>
+                    <Link href="/clubs/create">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Create New Club
+                    </Link>
+                </Button>
+                <Button className="w-full" variant="outline" asChild><Link href="/admin/manage-clubs">Manage Clubs</Link></Button>
                 <Button className="w-full" variant="outline" asChild><Link href="/admin/manage-users">Manage Users</Link></Button>
                 <Button className="w-full" variant="outline" asChild><Link href="/admin/reports">View Reports</Link></Button>
             </CardContent>

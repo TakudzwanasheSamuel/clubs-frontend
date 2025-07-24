@@ -41,11 +41,6 @@ export default function ClubDirectoryPage() {
             <Users className="h-8 w-8 text-primary mr-3" />
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Club Directory</h1>
         </div>
-        <Button asChild variant="default">
-          <Link href="/clubs/create">
-            <PlusCircle className="mr-2 h-5 w-5" /> Create Club
-          </Link>
-        </Button>
       </div>
       <p className="text-muted-foreground mb-6">
         Discover and join various clubs on campus. Find your community!
