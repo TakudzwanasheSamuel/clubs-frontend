@@ -18,8 +18,8 @@ const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
-  bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
+  logo: z.any().optional(),
+  bannerImage: z.any().optional(),
   meetingSchedule: z.string().max(100).optional(),
 });
 
@@ -32,14 +32,16 @@ export default function CreateClubPage() {
     defaultValues: {
       name: "",
       description: "",
-      logoUrl: "",
-      bannerImageUrl: "",
       meetingSchedule: "",
     },
   });
 
   function onSubmit(data: CreateClubFormValues) {
-    console.log("Create club data:", data);
+    console.log("Create club data (simulated):", {
+        ...data,
+        logo: data.logo?.[0]?.name, // In a real app, you'd upload the file
+        bannerImage: data.bannerImage?.[0]?.name,
+    });
     toast({
       title: "Club Created (Simulated)",
       description: "The new club has been added to the directory.",
@@ -54,7 +56,7 @@ export default function CreateClubPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Club</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Fill out the form below to create a new club. This will be immediately visible in the directory.
+        Fill out the form below to create a new club. This is an admin action.
       </p>
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
         <CardHeader>
@@ -119,28 +121,36 @@ export default function CreateClubPage() {
               />
               <FormField
                 control={form.control}
-                name="logoUrl"
+                name="logo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL (Optional)</FormLabel>
+                    <FormLabel>Logo</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/logo.png" {...field} />
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => field.onChange(e.target.files)}
+                      />
                     </FormControl>
-                    <FormDescription>Link to an image for your club's logo.</FormDescription>
+                    <FormDescription>Upload an image for your club's logo.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="bannerImageUrl"
+                name="bannerImage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Banner Image URL (Optional)</FormLabel>
+                    <FormLabel>Banner Image (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/banner.png" {...field} />
+                       <Input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => field.onChange(e.target.files)}
+                      />
                     </FormControl>
-                    <FormDescription>Link to a banner image for your club page.</FormDescription>
+                    <FormDescription>Upload a banner image for your club page.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
