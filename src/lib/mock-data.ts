@@ -1,3 +1,4 @@
+
 import type { Club, Event, Post, ClubCategory, User } from '@/types';
 
 export const clubCategories: ClubCategory[] = [
@@ -111,13 +112,19 @@ export const mockClubs: Club[] = [
   }
 ];
 
+const getFutureDate = (days: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().split('T')[0];
+};
+
 export const mockEvents: Event[] = [
   {
     id: 'evt1',
     slug: 'annual-hackathon-2024',
     title: 'Annual Hackathon 2024',
     description: 'Join us for 24 hours of coding, innovation, and fun! Prizes for top projects. Food and drinks provided. All skill levels welcome.',
-    date: '2024-11-15',
+    date: getFutureDate(30),
     time: '6:00 PM',
     location: 'Tech Hub Main Hall',
     clubName: 'MSU Coding Club',
@@ -130,7 +137,7 @@ export const mockEvents: Event[] = [
     slug: 'photography-workshop-portraits',
     title: 'Photography Workshop: Mastering Portraits',
     description: 'Learn the art of portrait photography from a professional photographer. Hands-on session, bring your cameras!',
-    date: '2024-10-20',
+    date: getFutureDate(15),
     time: '2:00 PM',
     location: 'Arts Building Studio C',
     clubName: 'Photography Club',
@@ -143,7 +150,7 @@ export const mockEvents: Event[] = [
     slug: 'campus-cleanup-drive',
     title: 'Campus Clean-up Drive',
     description: 'Let\'s make our campus greener! Join the Eco Warriors Club for a morning of cleaning and tree planting. Refreshments will be provided.',
-    date: '2024-09-28',
+    date: '2024-04-28', // Past date
     time: '9:00 AM',
     location: 'Meet at Central Quad',
     clubName: 'Eco Warriors Club',
@@ -155,13 +162,50 @@ export const mockEvents: Event[] = [
     slug: 'startup-pitch-night',
     title: 'Startup Pitch Night',
     description: 'Witness innovative startup ideas from fellow students. Network with entrepreneurs and investors. An inspiring evening for aspiring business leaders.',
-    date: '2024-11-05',
+    date: getFutureDate(22),
     time: '7:00 PM',
     location: 'Business School Auditorium',
     clubName: 'Entrepreneurship Hub',
     clubId: '4',
     coverImageUrl: 'https://placehold.co/600x400.png',
     status: 'upcoming',
+  },
+  {
+    id: 'evt5',
+    slug: 'alumni-networking-dinner',
+    title: 'Alumni Networking Dinner',
+    description: 'Connect with successful alumni from various fields. A great opportunity to build your professional network.',
+    date: getFutureDate(45),
+    time: '7:30 PM',
+    location: 'University Grand Ballroom',
+    clubName: 'Entrepreneurship Hub',
+    clubId: '4',
+    coverImageUrl: 'https://placehold.co/600x400.png',
+    status: 'upcoming',
+  },
+  {
+    id: 'evt6',
+    slug: 'intro-to-react-workshop',
+    title: 'Intro to React Workshop',
+    description: 'Learn the fundamentals of React, the most popular JavaScript library for building user interfaces.',
+    date: getFutureDate(18),
+    time: '5:00 PM',
+    location: 'Tech Hub Room 202',
+    clubName: 'MSU Coding Club',
+    clubId: '1',
+    status: 'upcoming',
+  },
+   {
+    id: 'evt7',
+    slug: 'fall-soccer-tryouts',
+    title: 'Fall Soccer Tryouts',
+    description: 'Think you have what it takes to join the varsity team? Come to our fall tryouts and show us your skills.',
+    date: '2024-08-25', // Past date
+    time: '3:00 PM',
+    location: 'University Sports Field',
+    clubName: 'Varsity Soccer Club',
+    clubId: '6',
+    status: 'past',
   }
 ];
 

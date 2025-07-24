@@ -1,3 +1,4 @@
+
 import type { Event } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ export function EventCard({ event }: EventCardProps) {
     month: 'long',
     day: 'numeric',
   });
+  const canRsvp = event.status === 'upcoming';
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
@@ -66,10 +68,10 @@ export function EventCard({ event }: EventCardProps) {
       </CardContent>
       <CardFooter className="p-4 border-t">
         <div className="flex justify-between items-center w-full">
-          <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
+          <Button asChild variant="default" size="sm" className="bg-primary hover:bg-primary/90">
              <Link href={`/events/${event.slug}`}>View Details</Link>
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled={!canRsvp}>
             RSVP
           </Button>
         </div>
