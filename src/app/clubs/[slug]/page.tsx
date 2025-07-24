@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { getClubBySlug, mockEvents, mockPosts, mockClubs } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,14 +28,17 @@ const getIconComponent = (iconName?: string): React.ElementType | null => {
   return icons[iconName] || Info;
 };
 
-export default function ClubDetailPage({ params }: { params: { slug: string } }) {
+export default function ClubDetailPage() {
+  const params = useParams();
+  const slug = typeof params.slug === 'string' ? params.slug : '';
   const [club, setClub] = useState<Club | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [isProcessingJoin, setIsProcessingJoin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const foundClub = getClubBySlug(params.slug);
+    if (!slug) return;
+    const foundClub = getClubBySlug(slug);
     if (foundClub) {
       setClub(foundClub);
       // In a real app, you'd fetch membership status
@@ -44,7 +47,7 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
     } else {
       notFound();
     }
-  }, [params.slug]);
+  }, [slug]);
 
   if (!club) {
     return (
@@ -226,9 +229,3 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
     </div>
   );
 }
-
-// generateStaticParams removed as this is now a client component
-// export async function generateStaticParams() {
-//   const clubSlugs = mockClubs.map(club => ({ slug: club.slug }));
-//   return clubSlugs;
-// }
