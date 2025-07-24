@@ -47,7 +47,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <SidebarProvider defaultOpen={true}>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar text-sidebar-foreground">
         <SidebarHeader className="p-4 border-b border-sidebar-border">
-          <Logo className="text-foreground" />
+          <Logo />
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarNav />

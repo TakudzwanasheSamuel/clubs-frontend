@@ -4,9 +4,9 @@ import Link from 'next/link';
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={`flex items-center gap-2 text-xl font-bold ${className}`}>
+    <Link href="/" className={`flex items-center gap-2 text-xl font-bold text-foreground ${className}`}>
       <School className="h-7 w-7 text-primary" />
-      <span className="text-foreground">myCampus</span>
+      <span className="text-inherit">myCampus</span>
     </Link>
   );
 }
