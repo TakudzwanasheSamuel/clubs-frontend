@@ -14,12 +14,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, Users, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { clubCategories } from "@/lib/mock-data";
+import { clubCategories, mockUsers } from "@/lib/mock-data";
 
 const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
+  clubLeadId: z.string({ required_error: "Please assign a club lead." }),
   logo: z.any().optional(),
   bannerImage: z.any().optional(),
   meetingSchedule: z.string().max(100).optional(),
@@ -65,7 +66,7 @@ export default function CreateClubPage() {
     });
     toast({
       title: "Club Created (Simulated)",
-      description: "The new club has been added to the directory.",
+      description: `The new club '${data.name}' has been added and assigned a lead.`,
     });
     form.reset();
     setLogoPreview(null);
@@ -79,6 +80,8 @@ export default function CreateClubPage() {
       if (bannerPreview) URL.revokeObjectURL(bannerPreview);
     };
   }, [logoPreview, bannerPreview]);
+  
+  const potentialLeads = mockUsers.filter(u => u.role !== 'admin');
 
   return (
     <div className="container mx-auto py-8">
@@ -95,7 +98,7 @@ export default function CreateClubPage() {
             <PlusCircle className="h-6 w-6 text-primary" />
             New Club Form
           </CardTitle>
-          <CardDescription>Provide details about the club you want to create.</CardDescription>
+          <CardDescription>Provide details about the club and assign a lead.</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -126,30 +129,56 @@ export default function CreateClubPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Club Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clubCategories.map(category => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Club Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clubCategories.map(category => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="clubLeadId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign Club Lead</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                             <SelectValue placeholder="Select a user to lead the club" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {potentialLeads.map(user => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.firstName} {user.lastName} ({user.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               {/* Logo Upload with Preview */}
               <FormField
@@ -187,9 +216,9 @@ export default function CreateClubPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Banner Image (Optional)</FormLabel>
-                     <div className="w-full h-32 rounded-md border border-dashed flex items-center justify-center bg-muted">
+                     <div className="w-full h-32 rounded-md border border-dashed flex items-center justify-center bg-muted relative overflow-hidden">
                         {bannerPreview ? (
-                          <Image src={bannerPreview} alt="Banner preview" layout="fill" className="object-cover rounded-md" data-ai-hint="banner preview"/>
+                          <Image src={bannerPreview} alt="Banner preview" layout="fill" className="object-cover" data-ai-hint="banner preview"/>
                         ) : (
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                         )}
