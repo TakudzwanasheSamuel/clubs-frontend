@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -77,7 +78,7 @@ export function SidebarNav() {
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
               isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
-              tooltip={{ children: item.tooltip || item.label, className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+              tooltip={{ children: item.tooltip || item.label, className: "bg-accent text-accent-foreground" }}
               className={cn(
                 (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)))
                   ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" 
