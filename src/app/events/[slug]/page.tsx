@@ -8,21 +8,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 // `notFound` from `next/navigation` is for Server Components. Client components handle "not found" differently.
 // We'll keep it for now but be mindful it won't work as expected on client-side navigation errors post-load.
-import { notFound } from 'next/navigation'; 
+import { notFound, useParams } from 'next/navigation'; 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, MapPin, Users, Info, Clock, Loader2, Check } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-export default function EventDetailPage({ params }: { params: { slug: string } }) {
+export default function EventDetailPage() {
+  const params = useParams();
+  const slug = typeof params.slug === 'string' ? params.slug : '';
+
   const [isRsvpd, setIsRsvpd] = useState(false);
   const [isProcessingRsvp, setIsProcessingRsvp] = useState(false);
   const { toast } = useToast();
 
   // Find event client-side.
   // In a real app with a backend, you'd fetch this data, perhaps in a useEffect.
-  const event = mockEvents.find(e => e.slug === params.slug || e.id === params.slug);
+  const event = mockEvents.find(e => e.slug === slug || e.id === slug);
 
   // Handle case where event is not found after component mounts
   useEffect(() => {
@@ -30,10 +33,10 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
       // This is a client-side "not found" state.
       // `notFound()` from next/navigation is primarily for server components.
       // For a client component, you might redirect or show a "not found" UI.
-      console.error("Event not found on client side for slug:", params.slug);
+      console.error("Event not found on client side for slug:", slug);
       // Consider redirecting: router.push('/404'); or showing a message
     }
-  }, [event, params.slug]);
+  }, [event, slug]);
 
   if (!event) {
      // Basic fallback if event is not found.
