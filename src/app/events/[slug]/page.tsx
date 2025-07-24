@@ -1,14 +1,11 @@
 
 "use client";
 
-import type { ChangeEvent } from 'react'; // Added for potential future use
 import { useState, useEffect } from 'react';
-import { mockEvents, mockClubs } from '@/lib/mock-data'; // Corrected: getEventById might not be needed if finding client-side. Ensure mockEvents is imported.
+import { mockEvents, mockClubs } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
-// `notFound` from `next/navigation` is for Server Components. Client components handle "not found" differently.
-// We'll keep it for now but be mindful it won't work as expected on client-side navigation errors post-load.
-import { notFound, useParams } from 'next/navigation'; 
+import { useParams, notFound } from 'next/navigation'; 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,53 +18,43 @@ export default function EventDetailPage() {
 
   const [isRsvpd, setIsRsvpd] = useState(false);
   const [isProcessingRsvp, setIsProcessingRsvp] = useState(false);
+  const [formattedDate, setFormattedDate] = useState('');
   const { toast } = useToast();
 
-  // Find event client-side.
-  // In a real app with a backend, you'd fetch this data, perhaps in a useEffect.
   const event = mockEvents.find(e => e.slug === slug || e.id === slug);
 
-  // Handle case where event is not found after component mounts
   useEffect(() => {
     if (!event) {
-      // This is a client-side "not found" state.
-      // `notFound()` from next/navigation is primarily for server components.
-      // For a client component, you might redirect or show a "not found" UI.
-      console.error("Event not found on client side for slug:", slug);
-      // Consider redirecting: router.push('/404'); or showing a message
+      notFound();
+    } else {
+      const eventDate = new Date(event.date);
+      setFormattedDate(eventDate.toLocaleDateString(undefined, {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }));
     }
-  }, [event, slug]);
+  }, [event]);
 
   if (!event) {
-     // Basic fallback if event is not found.
-     // In a real app, you'd have better loading/error states.
     return (
       <div className="container mx-auto py-8 text-center">
-        <h1 className="text-2xl font-bold text-foreground">Event Not Found</h1>
-        <p className="text-muted-foreground">The event you are looking for does not exist or could not be loaded.</p>
-        <Button asChild className="mt-4">
-          <Link href="/events">Back to Events</Link>
-        </Button>
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
   const club = mockClubs.find(c => c.id === event.clubId);
-  const eventDate = new Date(event.date);
-  const formattedDate = eventDate.toLocaleDateString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
 
   const handleRsvpClick = async () => {
     setIsProcessingRsvp(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     setIsRsvpd(!isRsvpd);
     setIsProcessingRsvp(false);
 
     toast({
-      title: !isRsvpd ? "Successfully RSVP'd!" : "RSVP Cancelled", // Logic corrected: toast reflects the new state
+      title: !isRsvpd ? "Successfully RSVP'd!" : "RSVP Cancelled",
       description: !isRsvpd
         ? `You are now attending "${event.title}".`
         : `Your RSVP for "${event.title}" has been cancelled.`,
@@ -77,7 +64,6 @@ export default function EventDetailPage() {
 
   return (
     <div className="container mx-auto py-8">
-      {/* Cover Image */}
       {event.coverImageUrl && (
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-xl mb-8">
           <Image
@@ -103,7 +89,6 @@ export default function EventDetailPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
             {!event.coverImageUrl && (
@@ -133,7 +118,7 @@ export default function EventDetailPage() {
                   <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
                     <CalendarDays className="w-5 h-5 mr-2 text-primary" /> Date
                   </h3>
-                  <p className="text-muted-foreground">{formattedDate}</p>
+                  <p className="text-muted-foreground">{formattedDate || 'Loading date...'}</p>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
@@ -188,7 +173,6 @@ export default function EventDetailPage() {
           </Card>
         </div>
 
-        {/* Sidebar/Related Info */}
         <div className="space-y-6">
           {club && (
             <Card className="shadow-lg">
@@ -206,19 +190,8 @@ export default function EventDetailPage() {
               </CardContent>
             </Card>
           )}
-          {/* Placeholder for related events or map */}
         </div>
       </div>
     </div>
   );
 }
-
-// Removed generateStaticParams as it conflicts with "use client"
-// export async function generateStaticParams() {
-//   // In a real app, fetch slugs from your data source
-//   const eventSlugs = mockEvents.map(event => ({ slug: event.slug || event.id }));
-//   return eventSlugs;
-// }
-    
-
-    
