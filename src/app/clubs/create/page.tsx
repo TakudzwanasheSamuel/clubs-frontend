@@ -14,13 +14,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, Users, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { clubCategories, mockUsers } from "@/lib/mock-data";
+import { clubCategories } from "@/lib/mock-data";
 
 const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  clubLeadId: z.string({ required_error: "Please assign a club lead." }),
   logo: z.any().optional(),
   bannerImage: z.any().optional(),
   meetingSchedule: z.string().max(100).optional(),
@@ -47,10 +46,11 @@ export default function CreateClubPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        const result = reader.result as string;
         if (fieldName === 'logo') {
-          setLogoPreview(reader.result as string);
+          setLogoPreview(result);
         } else {
-          setBannerPreview(reader.result as string);
+          setBannerPreview(result);
         }
         form.setValue(fieldName, file);
       };
@@ -65,8 +65,8 @@ export default function CreateClubPage() {
         bannerImage: data.bannerImage?.[0]?.name,
     });
     toast({
-      title: "Club Created (Simulated)",
-      description: `The new club '${data.name}' has been added and assigned a lead.`,
+      title: "Club Profile Created (Simulated)",
+      description: `The new club '${data.name}' has been created. You can now assign a lead.`,
     });
     form.reset();
     setLogoPreview(null);
@@ -80,8 +80,6 @@ export default function CreateClubPage() {
       if (bannerPreview) URL.revokeObjectURL(bannerPreview);
     };
   }, [logoPreview, bannerPreview]);
-  
-  const potentialLeads = mockUsers.filter(u => u.role !== 'admin');
 
   return (
     <div className="container mx-auto py-8">
@@ -90,7 +88,7 @@ export default function CreateClubPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Club</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Fill out the form below to create a new club. This is an admin action.
+        Fill out the form below to create a new club profile. This is an admin action.
       </p>
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
         <CardHeader>
@@ -98,7 +96,7 @@ export default function CreateClubPage() {
             <PlusCircle className="h-6 w-6 text-primary" />
             New Club Form
           </CardTitle>
-          <CardDescription>Provide details about the club and assign a lead.</CardDescription>
+          <CardDescription>Provide details for the new club.</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -129,8 +127,7 @@ export default function CreateClubPage() {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
+              <FormField
                   control={form.control}
                   name="categoryId"
                   render={({ field }) => (
@@ -154,31 +151,6 @@ export default function CreateClubPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="clubLeadId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign Club Lead</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                             <SelectValue placeholder="Select a user to lead the club" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {potentialLeads.map(user => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.firstName} {user.lastName} ({user.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               
               {/* Logo Upload with Preview */}
               <FormField
@@ -192,7 +164,9 @@ export default function CreateClubPage() {
                         {logoPreview ? (
                           <Image src={logoPreview} alt="Logo preview" width={96} height={96} className="object-cover rounded-md" data-ai-hint="logo preview"/>
                         ) : (
-                          <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                           <div className="w-full h-full flex items-center justify-center">
+                             <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                           </div>
                         )}
                       </div>
                       <FormControl className="flex-1">
@@ -220,7 +194,9 @@ export default function CreateClubPage() {
                         {bannerPreview ? (
                           <Image src={bannerPreview} alt="Banner preview" layout="fill" className="object-cover" data-ai-hint="banner preview"/>
                         ) : (
-                          <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                          </div>
                         )}
                       </div>
                     <FormControl className="mt-2">
@@ -261,5 +237,3 @@ export default function CreateClubPage() {
     </div>
   );
 }
-
-    
