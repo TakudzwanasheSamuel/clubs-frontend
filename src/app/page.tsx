@@ -11,12 +11,29 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ClubCard } from '@/components/clubs/club-card';
 import { EventCard } from '@/components/events/event-card';
 import { PostCard } from '@/components/news/post-card';
-import { mockClubs, mockEvents, mockPosts } from '@/lib/mock-data';
 import { Logo } from '@/components/logo';
-import { ChevronRight, Users, CalendarDays, MessageSquare, Sparkles, CheckCircle, Star } from 'lucide-react';
+import { ChevronRight, CalendarDays, Star } from 'lucide-react';
+import type { Club, Event, Post } from '@/types';
 
+async function getLandingPageData() {
+    try {
+        const [clubsRes, eventsRes, postsRes] = await Promise.all([
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/clubs`, { cache: 'no-store' }),
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/events`, { cache: 'no-store' }),
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/posts`, { cache: 'no-store' })
+        ]);
 
-// Simplified Top Navigation for Landing Page
+        const clubs = await clubsRes.json();
+        const events = await eventsRes.json();
+        const posts = await postsRes.json();
+
+        return { clubs, events, posts };
+    } catch (error) {
+        console.error("Failed to fetch landing page data:", error);
+        return { clubs: [], events: [], posts: [] };
+    }
+}
+
 function LandingPageHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -35,10 +52,12 @@ function LandingPageHeader() {
   );
 }
 
-export default function LandingPage() {
-  const featuredClubs = mockClubs.slice(0, 3);
-  const trendingPosts = mockPosts.slice(0, 2);
-  const upcomingEvents = mockEvents.filter(event => event.status === 'upcoming').slice(0, 2);
+export default async function LandingPage() {
+  const { clubs, events, posts } = await getLandingPageData();
+
+  const featuredClubs = (clubs as Club[]).sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0)).slice(0, 3);
+  const trendingPosts = (posts as Post[]).sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 2);
+  const upcomingEvents = (events as Event[]).filter(event => new Date(event.date) >= new Date()).slice(0, 2);
 
   const testimonials = [
     {
@@ -47,7 +66,6 @@ export default function LandingPage() {
       role: 'Student, Tech Enthusiast',
       avatarUrl: 'https://placehold.co/100x100.png',
       quote: "myCampus helped me discover the Coding Club, and it's been an amazing experience! The events are fantastic, and I've learned so much.",
-      dataAiHint: "student avatar"
     },
     {
       id: '2',
@@ -55,7 +73,6 @@ export default function LandingPage() {
       role: 'Club Lead, Debate Society',
       avatarUrl: 'https://placehold.co/100x100.png',
       quote: "Managing our club's events and announcements is so much easier with myCampus. It's a central hub that keeps everyone connected.",
-      dataAiHint: "student avatar"
     },
     {
       id: '3',
@@ -63,7 +80,6 @@ export default function LandingPage() {
       role: 'Fresher Student',
       avatarUrl: 'https://placehold.co/100x100.png',
       quote: "As a new student, myCampus was the perfect way to find clubs that matched my interests. I joined two in my first week!",
-      dataAiHint: "student avatar"
     },
   ];
 
@@ -72,11 +88,7 @@ export default function LandingPage() {
       <LandingPageHeader />
 
       <main className="flex-1">
-        {/* Hero Section */}
         <section className="relative py-20 md:py-32 bg-gradient-to-br from-primary/10 via-background to-background">
-          <div className="absolute inset-0 opacity-50 overflow-hidden">
-             {/* Decorative background elements */}
-          </div>
           <div className="container relative z-10 text-center">
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
               Welcome to <span className="text-primary">myCampus</span>
@@ -104,13 +116,11 @@ export default function LandingPage() {
                     height={600} 
                     className="rounded-lg shadow-2xl mx-auto"
                     priority
-                    data-ai-hint="campus students"
                 />
             </div>
           </div>
         </section>
 
-        {/* Featured Clubs Section */}
         <section className="py-16 bg-secondary/30">
           <div className="container">
             <h2 className="text-3xl font-bold tracking-tight text-center text-foreground mb-4">Featured Clubs</h2>
@@ -132,7 +142,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Upcoming Events Section */}
         <section className="py-16 bg-background">
           <div className="container">
             <h2 className="text-3xl font-bold tracking-tight text-center text-foreground mb-4">Upcoming Events</h2>
@@ -154,7 +163,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Trending Posts Section */}
         <section className="py-16 bg-secondary/30">
           <div className="container">
             <h2 className="text-3xl font-bold tracking-tight text-center text-foreground mb-4">Trending News & Stories</h2>
@@ -176,7 +184,6 @@ export default function LandingPage() {
           </div>
         </section>
         
-        {/* Testimonials Section */}
         <section className="py-16 bg-background">
           <div className="container">
             <h2 className="text-3xl font-bold tracking-tight text-center text-foreground mb-4">What Students Say</h2>
@@ -188,7 +195,7 @@ export default function LandingPage() {
                 <Card key={testimonial.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col">
                   <CardHeader className="flex-row gap-4 items-center pb-4">
                      <Avatar className="h-14 w-14 border-2 border-primary">
-                        <AvatarImage src={testimonial.avatarUrl} alt={testimonial.name} data-ai-hint={testimonial.dataAiHint} />
+                        <AvatarImage src={testimonial.avatarUrl} alt={testimonial.name} />
                         <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -210,7 +217,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Call to Action Section */}
         <section className="py-20 bg-primary text-primary-foreground">
           <div className="container text-center">
             <h2 className="text-3xl font-bold tracking-tight mb-6">Ready to Dive In?</h2>

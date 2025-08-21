@@ -1,23 +1,76 @@
+"use client";
+
+import { useState, useEffect } from 'react';
 import { EventCard } from '@/components/events/event-card';
-import { mockEvents } from '@/lib/mock-data';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusCircle, Search, Filter } from 'lucide-react';
+import type { Event } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EventCalendarPage() {
-  // Simple separation, in real app this would be more robust
-  const upcomingEvents = mockEvents.filter(event => new Date(event.date) >= new Date() && event.status !== 'past' && event.status !== 'cancelled').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const pastEvents = mockEvents.filter(event => new Date(event.date) < new Date() || event.status === 'past').sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/events');
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+        const data: Event[] = await response.json();
+        setEvents(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  const upcomingEvents = events.filter(event => new Date(event.date) >= new Date() && event.status !== 'past' && event.status !== 'cancelled').sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const pastEvents = events.filter(event => new Date(event.date) < new Date() || event.status === 'past').sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const renderLoadingState = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="flex flex-col space-y-3">
+          <Skeleton className="h-[200px] w-full rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderEventsList = (eventList: Event[], emptyMessage: string) => {
+    if (eventList.length === 0) {
+      return <p className="text-muted-foreground">{emptyMessage}</p>;
+    }
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {eventList.map(event => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto py-2">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Event Calendar</h1>
          <Button asChild variant="default">
-          <Link href="/events/create"> {/* Placeholder for create event page */}
+          <Link href="/events/create">
             <PlusCircle className="mr-2 h-5 w-5" /> Create Event
           </Link>
         </Button>
@@ -57,30 +110,14 @@ export default function EventCalendarPage() {
       
       <section>
         <h2 className="text-2xl font-semibold text-foreground mb-4">Upcoming Events</h2>
-        {upcomingEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {upcomingEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">No upcoming events scheduled at the moment. Check back soon!</p>
-        )}
+        {isLoading ? renderLoadingState() : error ? <p className="text-red-500">{error}</p> : renderEventsList(upcomingEvents, "No upcoming events scheduled at the moment. Check back soon!")}
       </section>
 
       <Separator className="my-10" />
 
       <section>
         <h2 className="text-2xl font-semibold text-foreground mb-4">Past Events</h2>
-        {pastEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pastEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">No past events to display.</p>
-        )}
+        {isLoading ? renderLoadingState() : error ? <p className="text-red-500">{error}</p> : renderEventsList(pastEvents, "No past events to display.")}
       </section>
     </div>
   );

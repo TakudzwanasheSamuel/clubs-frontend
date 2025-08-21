@@ -2,17 +2,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getClubBySlug, mockEvents, mockPosts, mockClubs } from '@/lib/mock-data';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { EventCard } from '@/components/events/event-card';
-import { PostCard } from '@/components/news/post-card';
-import { Facebook, Instagram, Twitter, Globe, Users, CalendarDays, BookOpen, Info, MessageSquare, Users2, Check, Loader2 } from 'lucide-react';
-import type { ClubCategory, Club } from '@/types';
+import { Facebook, Instagram, Twitter, Globe, Users, CalendarDays, BookOpen, Info, Users2, Check, Loader2 } from 'lucide-react';
+import type { Club } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 
 const getIconComponent = (iconName?: string): React.ElementType | null => {
@@ -28,23 +24,35 @@ const getIconComponent = (iconName?: string): React.ElementType | null => {
   return icons[iconName] || Info;
 };
 
-export default function ClubDetailPage({ params }: { params: { slug: string } }) {
+export default function ClubDetailPage() {
+  const params = useParams();
+  const slug = typeof params.slug === 'string' ? params.slug : '';
   const [club, setClub] = useState<Club | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [isProcessingJoin, setIsProcessingJoin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const foundClub = getClubBySlug(params.slug);
-    if (foundClub) {
-      setClub(foundClub);
-      // In a real app, you'd fetch membership status
-      // For simulation, let's assume not a member initially for some clubs
-      setIsMember(foundClub.id === '1'); // Example: already a member of coding club
-    } else {
-      notFound();
-    }
-  }, [params.slug]);
+    if (!slug) return;
+
+    const fetchClubData = async () => {
+      try {
+        const response = await fetch(`/api/clubs/${slug}`);
+        if (!response.ok) {
+          if (response.status === 404) notFound();
+          throw new Error('Failed to fetch club data');
+        }
+        const data: Club = await response.json();
+        setClub(data);
+        setIsMember(data.isMember || false);
+      } catch (error) {
+        console.error(error);
+        toast({ title: "Error", description: "Could not load club details.", variant: "destructive" });
+      }
+    };
+
+    fetchClubData();
+  }, [slug, toast]);
 
   if (!club) {
     return (
@@ -56,24 +64,43 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
 
   const handleJoinClub = async () => {
     setIsProcessingJoin(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch(`/api/clubs/${slug}/membership`, {
+        method: isMember ? 'DELETE' : 'POST',
+      });
 
-    setIsMember(!isMember);
-    setIsProcessingJoin(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update membership');
+      }
 
-    toast({
-      title: !isMember ? `Successfully Joined ${club.name}!` : `Left ${club.name}`,
-      description: !isMember
-        ? `Welcome to ${club.name}.`
-        : `You are no longer a member of ${club.name}.`,
-      variant: "default",
-    });
+      const newIsMember = !isMember;
+      setIsMember(newIsMember);
+
+      // Optimistically update member count
+      setClub(prevClub => {
+        if (!prevClub) return null;
+        return {
+          ...prevClub,
+          memberCount: prevClub.memberCount + (newIsMember ? 1 : -1),
+        };
+      });
+
+      toast({
+        title: newIsMember ? `Successfully Joined ${club.name}!` : `Left ${club.name}`,
+      });
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingJoin(false);
+    }
   };
 
-
-  const clubEvents = mockEvents.filter(event => event.clubId === club.id).slice(0, 2);
-  const clubPosts = mockPosts.filter(post => post.clubId === club.id).slice(0, 2);
   const CategoryIcon = getIconComponent(club.category.icon);
 
   return (
@@ -86,7 +113,6 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
             fill
             style={{ objectFit: 'cover' }}
             priority
-            data-ai-hint="club event banner"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         </div>
@@ -103,7 +129,6 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
                   width={100}
                   height={100}
                   className="rounded-lg border-4 border-background shadow-md"
-                  data-ai-hint="club logo profile"
                 />
                 <div className="flex-1">
                   <CardTitle className="text-3xl font-bold text-primary">{club.name}</CardTitle>
@@ -153,7 +178,7 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
                   <Users className="w-5 h-5 mr-2 text-primary" />
                   Members
                 </h3>
-                <p className="text-muted-foreground">{club.memberCount + (isMember && club.id !=='1' ? 1 : (club.id === '1' && !isMember ? -1 : 0) )} members</p>
+                <p className="text-muted-foreground">{club.memberCount} members</p>
               </div>
 
               {club.socialLinks && (
@@ -177,8 +202,8 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
               <CardTitle className="text-xl font-semibold text-foreground">Recent Events</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {clubEvents.length > 0 ? (
-                clubEvents.map(event => (
+              {club.events && club.events.length > 0 ? (
+                club.events.map(event => (
                   <div key={event.id} className="p-3 border rounded-md hover:bg-muted/50">
                     <Link href={`/events/${event.slug}`} className="block">
                       <h4 className="font-medium text-primary">{event.title}</h4>
@@ -189,11 +214,6 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
               ) : (
                 <p className="text-sm text-muted-foreground">No recent events.</p>
               )}
-              {mockEvents.filter(event => event.clubId === club.id).length > 2 && (
-                 <Button variant="link" asChild className="text-primary p-0 h-auto">
-                    <Link href={`/events?clubId=${club.id}`}>View all events</Link>
-                 </Button>
-              )}
             </CardContent>
           </Card>
 
@@ -202,8 +222,8 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
               <CardTitle className="text-xl font-semibold text-foreground">Latest Posts</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {clubPosts.length > 0 ? (
-                clubPosts.map(post => (
+              {club.posts && club.posts.length > 0 ? (
+                club.posts.map(post => (
                    <div key={post.id} className="p-3 border rounded-md hover:bg-muted/50">
                     <Link href={`/news/${post.slug}`} className="block">
                       <h4 className="font-medium text-primary">{post.title}</h4>
@@ -214,11 +234,6 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
               ) : (
                 <p className="text-sm text-muted-foreground">No recent posts.</p>
               )}
-               {mockPosts.filter(post => post.clubId === club.id).length > 2 && (
-                 <Button variant="link" asChild className="text-primary p-0 h-auto">
-                    <Link href={`/news?clubId=${club.id}`}>View all posts</Link>
-                 </Button>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -226,9 +241,3 @@ export default function ClubDetailPage({ params }: { params: { slug: string } })
     </div>
   );
 }
-
-// generateStaticParams removed as this is now a client component
-// export async function generateStaticParams() {
-//   const clubSlugs = mockClubs.map(club => ({ slug: club.slug }));
-//   return clubSlugs;
-// }

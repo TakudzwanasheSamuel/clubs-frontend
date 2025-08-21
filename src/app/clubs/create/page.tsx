@@ -1,6 +1,5 @@
 
-"use client";
-
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,16 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Users } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { clubCategories } from "@/lib/mock-data";
+import { useRouter } from "next/navigation";
+import type { ClubCategory } from "@/types";
 
 const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }).optional().or(z.literal('')),
+  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }),
   bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
   meetingSchedule: z.string().max(100).optional(),
 });
@@ -27,6 +27,10 @@ type CreateClubFormValues = z.infer<typeof createClubFormSchema>;
 
 export default function CreateClubPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [categories, setCategories] = useState<ClubCategory[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
   const form = useForm<CreateClubFormValues>({
     resolver: zodResolver(createClubFormSchema),
     defaultValues: {
@@ -38,13 +42,50 @@ export default function CreateClubPage() {
     },
   });
 
-  function onSubmit(data: CreateClubFormValues) {
-    console.log("Create club data:", data);
-    toast({
-      title: "Club Creation Submitted (Simulated)",
-      description: "In a real app, this would go through an approval process.",
-    });
-    form.reset();
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/club-categories');
+        if (!res.ok) throw new Error('Failed to fetch categories');
+        const data: ClubCategory[] = await res.json();
+        setCategories(data);
+      } catch (error) {
+        toast({ title: "Error", description: "Could not load club categories.", variant: "destructive" });
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    fetchCategories();
+  }, [toast]);
+
+  async function onSubmit(data: CreateClubFormValues) {
+    try {
+      const response = await fetch('/api/clubs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create club');
+      }
+
+      const newClub = await response.json();
+
+      toast({
+        title: "Club Created Successfully!",
+        description: `Your new club, ${data.name}, has been created.`,
+      });
+
+      router.push(`/clubs/${newClub.slug}`);
+    } catch (error) {
+      toast({
+        title: "Creation Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -99,14 +140,14 @@ export default function CreateClubPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Club Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingCategories}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
+                          <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clubCategories.map(category => (
+                        {categories.map(category => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>
@@ -122,7 +163,7 @@ export default function CreateClubPage() {
                 name="logoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL (Optional)</FormLabel>
+                    <FormLabel>Logo URL</FormLabel>
                     <FormControl>
                       <Input placeholder="https://example.com/logo.png" {...field} />
                     </FormControl>
@@ -160,8 +201,11 @@ export default function CreateClubPage() {
               />
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Submitting..." : "Submit Proposal"}
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingCategories}>
+                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting...</> : "Submit Proposal"}
               </Button>
             </CardFooter>
           </form>
