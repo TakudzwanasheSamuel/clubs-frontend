@@ -1,6 +1,5 @@
 
-"use client";
-
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,15 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { CalendarPlus, Users } from "lucide-react";
+import { CalendarPlus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { mockClubs } from "@/lib/mock-data"; // Assuming club leads create events for their clubs
+import { useRouter } from "next/navigation";
+import type { Club } from "@/types";
 
 const createEventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(1000),
   date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Please enter a valid date (YYYY-MM-DD)." }),
-  time: z.string().min(1, {message: "Time is required."}), // Basic time validation, can be improved
+  time: z.string().min(1, {message: "Time is required."}),
   location: z.string().min(3, { message: "Location must be at least 3 characters." }).max(100),
   clubId: z.string({ required_error: "Please select the host club." }),
   coverImageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
@@ -28,6 +28,10 @@ type CreateEventFormValues = z.infer<typeof createEventFormSchema>;
 
 export default function CreateEventPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [ledClubs, setLedClubs] = useState<Pick<Club, 'id' | 'name' | 'slug'>[]>([]);
+  const [isLoadingClubs, setIsLoadingClubs] = useState(true);
+
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventFormSchema),
     defaultValues: {
@@ -40,16 +44,52 @@ export default function CreateEventPage() {
     },
   });
 
-  // Simulate user's manageable clubs (in a real app, this would come from user data)
-  const manageableClubs = mockClubs.slice(0,3); // Example: user manages first 3 clubs
+  useEffect(() => {
+    const fetchLedClubs = async () => {
+      setIsLoadingClubs(true);
+      try {
+        const res = await fetch('/api/my-clubs/led');
+        if (!res.ok) throw new Error('Failed to fetch your clubs');
+        const data = await res.json();
+        setLedClubs(data);
+        if (data.length === 0) {
+            toast({ title: "No Clubs Found", description: "You must be a lead of a club to create an event.", variant: "destructive" });
+        }
+      } catch (error) {
+        toast({ title: "Error", description: "Could not load your clubs.", variant: "destructive" });
+      } finally {
+        setIsLoadingClubs(false);
+      }
+    };
+    fetchLedClubs();
+  }, [toast]);
 
-  function onSubmit(data: CreateEventFormValues) {
-    console.log("Create event data:", data);
-    toast({
-      title: "Event Created (Simulated)",
-      description: "Your new event has been added to the calendar.",
-    });
-    form.reset();
+  async function onSubmit(data: CreateEventFormValues) {
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create event');
+      }
+
+      const newEvent = await response.json();
+      toast({
+        title: "Event Created Successfully!",
+        description: `Your new event, ${data.title}, has been created.`,
+      });
+      router.push(`/events/${newEvent.slug}`);
+    } catch (error) {
+      toast({
+        title: "Creation Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -145,14 +185,14 @@ export default function CreateEventPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Host Club</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClubs || ledClubs.length === 0}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select host club" />
+                          <SelectValue placeholder={isLoadingClubs ? "Loading your clubs..." : "Select host club"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {manageableClubs.map(club => (
+                        {ledClubs.map(club => (
                           <SelectItem key={club.id} value={club.id}>
                             {club.name}
                           </SelectItem>
@@ -178,9 +218,12 @@ export default function CreateEventPage() {
                 )}
               />
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating Event..." : "Create Event"}
+            <CardFooter className="flex justify-end gap-2">
+               <Button type="button" variant="outline" onClick={() => router.back()}>
+                Cancel
+              </Button>
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingClubs || ledClubs.length === 0}>
+                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : "Create Event"}
               </Button>
             </CardFooter>
           </form>

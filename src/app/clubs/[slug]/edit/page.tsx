@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,17 +12,18 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { clubCategories, getClubBySlug, mockClubs } from "@/lib/mock-data";
-import type { Club } from "@/types";
+import type { Club, ClubCategory } from "@/types";
 import { useParams, useRouter, notFound } from "next/navigation";
 
+// Define a schema that includes the social links for a more complete update
 const editClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }).optional().or(z.literal('')),
+  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }),
   bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
   meetingSchedule: z.string().max(100).optional(),
+  // social links are not part of the form, but could be added
 });
 
 type EditClubFormValues = z.infer<typeof editClubFormSchema>;
@@ -32,67 +33,103 @@ export default function EditClubPage() {
   const params = useParams();
   const router = useRouter();
   const slug = typeof params.slug === 'string' ? params.slug : '';
-  
+
+  const [categories, setCategories] = useState<ClubCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm<EditClubFormValues>({
     resolver: zodResolver(editClubFormSchema),
-    defaultValues: async () => {
-        const club = getClubBySlug(slug);
-        if (club) {
-            return {
-                name: club.name,
-                description: club.description,
-                categoryId: club.category.id,
-                logoUrl: club.logoUrl || "",
-                bannerImageUrl: club.bannerImageUrl || "",
-                meetingSchedule: club.meetingSchedule || "",
-            };
-        }
-        return { // Default empty values if club not found initially
-            name: "",
-            description: "",
-            categoryId: "",
-            logoUrl: "",
-            bannerImageUrl: "",
-            meetingSchedule: "",
-        };
-    }
+    defaultValues: {
+      name: "",
+      description: "",
+      categoryId: "",
+      logoUrl: "",
+      bannerImageUrl: "",
+      meetingSchedule: "",
+    },
   });
 
   useEffect(() => {
     if (!slug) return;
-    const club = getClubBySlug(slug);
-    if (!club) {
-      notFound();
-    } else {
-         // Reset form with club data if slug changes or on initial load after async defaultValues might have run
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [clubRes, categoriesRes] = await Promise.all([
+          fetch(`/api/clubs/${slug}`),
+          fetch('/api/club-categories')
+        ]);
+
+        if (!clubRes.ok) {
+          if (clubRes.status === 404) notFound();
+          throw new Error('Failed to fetch club data');
+        }
+        if (!categoriesRes.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+
+        const club: Club = await clubRes.json();
+        const categoriesData: ClubCategory[] = await categoriesRes.json();
+
+        setCategories(categoriesData);
         form.reset({
-            name: club.name,
-            description: club.description,
-            categoryId: club.category.id,
-            logoUrl: club.logoUrl || "",
-            bannerImageUrl: club.bannerImageUrl || "",
-            meetingSchedule: club.meetingSchedule || "",
+          name: club.name,
+          description: club.description,
+          categoryId: club.categoryId,
+          logoUrl: club.logoUrl,
+          bannerImageUrl: club.bannerImageUrl || "",
+          meetingSchedule: club.meetingSchedule || "",
         });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [slug, form.reset, toast]);
+
+  async function onSubmit(data: EditClubFormValues) {
+    try {
+      const response = await fetch(`/api/clubs/${slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update club');
+      }
+
+      toast({
+        title: "Club Updated Successfully",
+        description: `Details for ${data.name} have been saved.`,
+      });
+      router.push(`/clubs/${slug}`);
+      router.refresh(); // Refresh server components on the target page
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
     }
-  }, [slug, form, form.reset]);
-
-
-  function onSubmit(data: EditClubFormValues) {
-    console.log("Update club data (simulated):", data);
-    toast({
-      title: "Club Updated (Simulated)",
-      description: `Details for ${data.name} have been saved.`,
-    });
-    // Potentially redirect or re-fetch data
-    router.push(`/clubs/${slug}`);
   }
   
-  if (form.formState.isLoading) { // Checks if defaultValues are loading
+  if (isLoading) {
     return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  if (error) {
+    return <div className="text-center py-12 text-red-500">Error: {error}</div>;
   }
 
   return (
@@ -154,7 +191,7 @@ export default function EditClubPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clubCategories.map(category => (
+                        {categories.map(category => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>

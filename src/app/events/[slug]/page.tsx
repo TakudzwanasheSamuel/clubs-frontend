@@ -1,47 +1,75 @@
 
-"use client";
-
-import type { ChangeEvent } from 'react'; // Added for potential future use
 import { useState, useEffect } from 'react';
-import { mockEvents, mockClubs } from '@/lib/mock-data'; // Corrected: getEventById might not be needed if finding client-side. Ensure mockEvents is imported.
 import Image from 'next/image';
 import Link from 'next/link';
-// `notFound` from `next/navigation` is for Server Components. Client components handle "not found" differently.
-// We'll keep it for now but be mindful it won't work as expected on client-side navigation errors post-load.
-import { notFound } from 'next/navigation'; 
+import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, MapPin, Users, Info, Clock, Loader2, Check } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import type { Event } from '@/types';
 
-export default function EventDetailPage({ params }: { params: { slug: string } }) {
+export default function EventDetailPage() {
+  const params = useParams();
+  const slug = typeof params.slug === 'string' ? params.slug : '';
+  const [event, setEvent] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [isRsvpd, setIsRsvpd] = useState(false);
   const [isProcessingRsvp, setIsProcessingRsvp] = useState(false);
   const { toast } = useToast();
 
-  // Find event client-side.
-  // In a real app with a backend, you'd fetch this data, perhaps in a useEffect.
-  const event = mockEvents.find(e => e.slug === params.slug || e.id === params.slug);
-
-  // Handle case where event is not found after component mounts
   useEffect(() => {
-    if (!event) {
-      // This is a client-side "not found" state.
-      // `notFound()` from next/navigation is primarily for server components.
-      // For a client component, you might redirect or show a "not found" UI.
-      console.error("Event not found on client side for slug:", params.slug);
-      // Consider redirecting: router.push('/404'); or showing a message
-    }
-  }, [event, params.slug]);
+    if (!slug) return;
+    const fetchEvent = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/events/${slug}`);
+        if (!res.ok) {
+          if (res.status === 404) notFound();
+          throw new Error('Failed to fetch event data');
+        }
+        const data: Event = await res.json();
+        setEvent(data);
+        // RSVP status would be fetched from a user-specific endpoint in a real app
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [slug]);
 
-  if (!event) {
-     // Basic fallback if event is not found.
-     // In a real app, you'd have better loading/error states.
+  const handleRsvpClick = async () => {
+    if (!event) return;
+    setIsProcessingRsvp(true);
+    // Simulate API call for now
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsRsvpd(!isRsvpd);
+    setIsProcessingRsvp(false);
+    toast({
+      title: !isRsvpd ? "Successfully RSVP'd!" : "RSVP Cancelled",
+      description: `Your RSVP status for "${event.title}" has been updated.`,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !event) {
     return (
       <div className="container mx-auto py-8 text-center">
         <h1 className="text-2xl font-bold text-foreground">Event Not Found</h1>
-        <p className="text-muted-foreground">The event you are looking for does not exist or could not be loaded.</p>
+        <p className="text-muted-foreground">{error || 'The event you are looking for does not exist.'}</p>
         <Button asChild className="mt-4">
           <Link href="/events">Back to Events</Link>
         </Button>
@@ -49,32 +77,14 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
     );
   }
 
-  const club = mockClubs.find(c => c.id === event.clubId);
+  const club = event.club; // The API now provides the nested club object
   const eventDate = new Date(event.date);
   const formattedDate = eventDate.toLocaleDateString(undefined, {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  const handleRsvpClick = async () => {
-    setIsProcessingRsvp(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setIsRsvpd(!isRsvpd);
-    setIsProcessingRsvp(false);
-
-    toast({
-      title: !isRsvpd ? "Successfully RSVP'd!" : "RSVP Cancelled", // Logic corrected: toast reflects the new state
-      description: !isRsvpd
-        ? `You are now attending "${event.title}".`
-        : `Your RSVP for "${event.title}" has been cancelled.`,
-      variant: "default",
-    });
-  };
-
   return (
     <div className="container mx-auto py-8">
-      {/* Cover Image */}
       {event.coverImageUrl && (
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden shadow-xl mb-8">
           <Image
@@ -83,7 +93,6 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
             fill
             style={{ objectFit: 'cover' }}
             priority
-            data-ai-hint="event detail cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-6 flex flex-col justify-end">
             <h1 className="text-3xl md:text-4xl font-bold text-white shadow-text">{event.title}</h1>
@@ -100,7 +109,6 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
             {!event.coverImageUrl && (
@@ -185,7 +193,6 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
           </Card>
         </div>
 
-        {/* Sidebar/Related Info */}
         <div className="space-y-6">
           {club && (
             <Card className="shadow-lg">
@@ -194,7 +201,7 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 mb-3">
-                  <Image src={club.logoUrl} alt={`${club.name} logo`} width={50} height={50} className="rounded-md" data-ai-hint="club logo small"/>
+                  <Image src={club.logoUrl} alt={`${club.name} logo`} width={50} height={50} className="rounded-md"/>
                   <p className="text-sm text-muted-foreground line-clamp-3">{club.description.substring(0,100)}...</p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
@@ -203,19 +210,11 @@ export default function EventDetailPage({ params }: { params: { slug: string } }
               </CardContent>
             </Card>
           )}
-          {/* Placeholder for related events or map */}
         </div>
       </div>
     </div>
   );
 }
-
-// Removed generateStaticParams as it conflicts with "use client"
-// export async function generateStaticParams() {
-//   // In a real app, fetch slugs from your data source
-//   const eventSlugs = mockEvents.map(event => ({ slug: event.slug || event.id }));
-//   return eventSlugs;
-// }
     
 
     
