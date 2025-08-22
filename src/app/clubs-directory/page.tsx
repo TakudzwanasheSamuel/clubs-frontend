@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusCircle, Users, Search, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/auth-context';
+import { Logo } from '@/components/logo';
 
 export default function ClubDirectoryPage() {
+  const { user } = useAuth();
   const [allClubs, setAllClubs] = useState<Club[]>([]);
   const [categories, setCategories] = useState<ClubCategory[]>([]);
   const [filteredClubs, setFilteredClubs] = useState<Club[]>([]);
@@ -25,7 +28,7 @@ export default function ClubDirectoryPage() {
       setError(null);
       try {
         const [clubsRes, categoriesRes] = await Promise.all([
-          fetch('/api/clubs'),
+          fetch('/api/clubs/public'),
           fetch('/api/club-categories')
         ]);
 
@@ -81,19 +84,48 @@ export default function ClubDirectoryPage() {
     </div>
   );
 
-  return (
-    <div className="container mx-auto py-2">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-            <Users className="h-8 w-8 text-primary mr-3" />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Club Directory</h1>
-        </div>
-        <Button asChild variant="default">
-          <Link href="/clubs/create">
-            <PlusCircle className="mr-2 h-5 w-5" /> Create Club
-          </Link>
-        </Button>
+  const PublicHeader = () => (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
+        <Logo />
+        <nav className="flex items-center gap-4">
+          <Button variant="ghost" asChild>
+            <Link href="/">Home</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/events">Events</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/news">News</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">Sign Up</Link>
+          </Button>
+        </nav>
       </div>
+    </header>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      {!user && <PublicHeader />}
+      <div className="container mx-auto py-2">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+              <Users className="h-8 w-8 text-primary mr-3" />
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Club Directory</h1>
+          </div>
+          {user && (user.role === 'super_admin' || user.role === 'sdo_admin') && (
+            <Button asChild variant="default">
+              <Link href="/clubs/create">
+                <PlusCircle className="mr-2 h-5 w-5" /> Create Club
+              </Link>
+            </Button>
+          )}
+        </div>
       <p className="text-muted-foreground mb-6">
         Discover and join various clubs on campus. Find your community!
       </p>
@@ -125,6 +157,7 @@ export default function ClubDirectoryPage() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

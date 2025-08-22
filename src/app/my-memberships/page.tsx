@@ -7,18 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Club } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function MyMembershipsPage() {
   const [memberClubs, setMemberClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { token, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchMemberClubs = async () => {
+      if (!token || authLoading) return;
+      
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/my-memberships');
+        const response = await fetch('/api/my-memberships', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch your club memberships');
         }
@@ -31,7 +39,7 @@ export default function MyMembershipsPage() {
       }
     };
     fetchMemberClubs();
-  }, []);
+  }, [token, authLoading]);
 
   const renderLoadingState = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,7 +65,23 @@ export default function MyMembershipsPage() {
         Manage your club memberships and see updates from clubs you've joined.
       </p>
 
-      {isLoading ? (
+      {authLoading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading authentication...</p>
+        </div>
+      ) : !token ? (
+        <div className="text-center py-12">
+          <Card className="text-center py-12 shadow">
+            <CardHeader>
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <CardTitle className="text-xl text-muted-foreground">Please log in to view your memberships</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">You need to be logged in to see your club memberships.</p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : isLoading ? (
         renderLoadingState()
       ) : error ? (
         <p className="text-center text-red-500">{error}</p>

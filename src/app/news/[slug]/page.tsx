@@ -28,8 +28,9 @@ async function getPostData(slug: string): Promise<Post | null> {
   }
 }
 
-export default async function PostDetailPage({ params }: { params: { slug: string } }) {
-  const post = await getPostData(params.slug);
+export default async function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const post = await getPostData(slug);
 
   if (!post) {
     notFound();

@@ -7,11 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PlusCircle, Search, Filter } from 'lucide-react';
+import { PlusCircle, Search, Filter, CalendarDays } from 'lucide-react';
 import type { Event } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/auth-context';
+import { Logo } from '@/components/logo';
 
 export default function EventCalendarPage() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,7 @@ export default function EventCalendarPage() {
     const fetchEvents = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/events');
+        const response = await fetch('/api/events/public');
         if (!response.ok) {
           throw new Error('Failed to fetch events');
         }
@@ -65,16 +68,48 @@ export default function EventCalendarPage() {
     );
   };
 
-  return (
-    <div className="container mx-auto py-2">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Event Calendar</h1>
-         <Button asChild variant="default">
-          <Link href="/events/create">
-            <PlusCircle className="mr-2 h-5 w-5" /> Create Event
-          </Link>
-        </Button>
+  const PublicHeader = () => (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
+        <Logo />
+        <nav className="flex items-center gap-4">
+          <Button variant="ghost" asChild>
+            <Link href="/">Home</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/clubs-directory">Clubs</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/news">News</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">Sign Up</Link>
+          </Button>
+        </nav>
       </div>
+    </header>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      {!user && <PublicHeader />}
+      <div className="container mx-auto py-2">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <CalendarDays className="h-8 w-8 text-primary mr-3" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Event Calendar</h1>
+          </div>
+          {user && (user.role === 'super_admin' || user.role === 'sdo_admin') && (
+            <Button asChild variant="default">
+              <Link href="/events/create">
+                <PlusCircle className="mr-2 h-5 w-5" /> Create Event
+              </Link>
+            </Button>
+          )}
+        </div>
       <p className="text-muted-foreground mb-6">
         Find out what's happening on campus. Join events, workshops, and more!
       </p>
@@ -119,6 +154,7 @@ export default function EventCalendarPage() {
         <h2 className="text-2xl font-semibold text-foreground mb-4">Past Events</h2>
         {isLoading ? renderLoadingState() : error ? <p className="text-red-500">{error}</p> : renderEventsList(pastEvents, "No past events to display.")}
       </section>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -37,6 +37,7 @@ model User {
   firstName         String
   lastName          String
   email             String       @unique
+  registrationNumber String?     @unique
   password          String
   role              UserRole     @default(student)
   profilePictureUrl String?
@@ -44,6 +45,7 @@ model User {
   // Relations
   ledClubs          Club[]       @relation("ClubLead")
   memberships       Membership[]
+  invitations       ClubInvitation[] @relation("ClubInvitation")
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 }
@@ -64,7 +66,7 @@ model Club {
   slug            String  @unique
   name            String
   description     String
-  logoUrl         String
+  logoUrl         String?
   bannerImageUrl  String?
 
   // Social Links
@@ -79,18 +81,39 @@ model Club {
   category        ClubCategory @relation(fields: [categoryId], references: [id])
   categoryId      String
 
-  lead            User         @relation("ClubLead", fields: [leadId], references: [id])
-  leadId          String
+  lead            User?        @relation("ClubLead", fields: [leadId], references: [id])
+  leadId          String?
 
   members         Membership[]
   events          Event[]
   posts           Post[]
+  invitations     ClubInvitation[]
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@index([leadId])
   @@index([categoryId])
+}
+
+model ClubInvitation {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  usedBy    User?    @relation("ClubInvitation", fields: [usedById], references: [id])
+  usedById  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([email])
+  @@index([token])
 }
 
 model Membership {

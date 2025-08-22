@@ -10,15 +10,15 @@ interface Params {
 }
 
 // POST to join a club
-export async function POST(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const club = await prisma.club.findUnique({
       where: { slug },
     });
@@ -51,21 +51,21 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(membership, { status: 201 });
   } catch (error) {
-    console.error(`Join Club (slug: ${slug}) Error:`, error);
+    console.error(`Join Club Error:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 // DELETE to leave a club
-export async function DELETE(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const club = await prisma.club.findUnique({
       where: { slug },
     });
@@ -86,7 +86,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error) {
-    console.error(`Leave Club (slug: ${slug}) Error:`, error);
+    console.error(`Leave Club Error:`, error);
     // Prisma throws an error if the record to be deleted is not found
     if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
         return new NextResponse('You are not a member of this club', { status: 404 });

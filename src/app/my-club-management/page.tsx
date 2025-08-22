@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,6 +9,7 @@ import type { Club } from '@/types';
 import { Edit, PlusCircle, Eye, Users, Settings, ListChecks, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/auth-context';
 
 const ManagedClubCard = ({ club }: { club: Club }) => (
   <Card className="shadow-xl mb-8">
@@ -80,12 +83,19 @@ export default function MyClubManagementPage() {
   const [managedClubs, setManagedClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { token, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchManagedClubs = async () => {
+      if (!token || authLoading) return;
+      
       setIsLoading(true);
       try {
-        const response = await fetch('/api/my-clubs/led');
+        const response = await fetch('/api/my-clubs/led', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) throw new Error('Failed to fetch managed clubs');
 
         // We need full club details, so we fetch each one.
@@ -107,7 +117,7 @@ export default function MyClubManagementPage() {
       }
     };
     fetchManagedClubs();
-  }, [toast]);
+  }, [token, authLoading, toast]);
 
   const renderLoadingState = () => (
     <Card className="shadow-xl mb-8">
@@ -136,11 +146,27 @@ export default function MyClubManagementPage() {
         Oversee and manage your club's details, events, and posts.
       </p>
 
-      {isLoading ? (
-        renderLoadingState()
-      ) : managedClubs.length > 0 ? (
-        managedClubs.map(club => <ManagedClubCard key={club.id} club={club} />)
-      ) : (
+             {authLoading ? (
+         <div className="text-center py-12">
+           <p className="text-muted-foreground">Loading authentication...</p>
+         </div>
+       ) : !token ? (
+         <div className="text-center py-12">
+           <Card className="text-center py-12 shadow">
+             <CardHeader>
+               <Settings className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+               <CardTitle className="text-xl text-muted-foreground">Please log in to manage clubs</CardTitle>
+             </CardHeader>
+             <CardContent>
+               <p className="text-sm text-muted-foreground">You need to be logged in to manage your clubs.</p>
+             </CardContent>
+           </Card>
+         </div>
+       ) : isLoading ? (
+         renderLoadingState()
+       ) : managedClubs.length > 0 ? (
+         managedClubs.map(club => <ManagedClubCard key={club.id} club={club} />)
+       ) : (
         <Card className="text-center py-12 shadow">
           <CardHeader>
             <ListChecks className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

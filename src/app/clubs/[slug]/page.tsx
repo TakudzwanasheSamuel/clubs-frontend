@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Facebook, Instagram, Twitter, Globe, Users, CalendarDays, BookOpen, Info, Users2, Check, Loader2 } from 'lucide-react';
 import type { Club } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+import { DEFAULT_IMAGES } from '@/lib/constants';
 
 const getIconComponent = (iconName?: string): React.ElementType | null => {
   if (!iconName) return Info;
@@ -105,18 +106,16 @@ export default function ClubDetailPage() {
 
   return (
     <div className="container mx-auto py-8">
-      {club.bannerImageUrl && (
-        <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden shadow-lg mb-8">
-          <Image
-            src={club.bannerImageUrl}
-            alt={`${club.name} banner`}
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        </div>
-      )}
+      <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden shadow-lg mb-8">
+        <Image
+          src={club.bannerImageUrl || DEFAULT_IMAGES.CLUB_BANNER}
+          alt={`${club.name} banner`}
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
@@ -124,7 +123,7 @@ export default function ClubDetailPage() {
             <CardHeader className="bg-card p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Image
-                  src={club.logoUrl}
+                  src={club.logoUrl || DEFAULT_IMAGES.CLUB_LOGO}
                   alt={`${club.name} logo`}
                   width={100}
                   height={100}

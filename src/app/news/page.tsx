@@ -9,8 +9,11 @@ import { Search, Filter, Rss, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Post } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/auth-context';
+import { Logo } from '@/components/logo';
 
 export default function NewsfeedPage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,7 @@ export default function NewsfeedPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/posts');
+        const response = await fetch('/api/posts/public');
         if (!response.ok) {
           throw new Error('Failed to fetch posts');
         }
@@ -49,16 +52,48 @@ export default function NewsfeedPage() {
     </div>
   );
 
-  return (
-    <div className="container mx-auto py-2">
-       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">News & Announcements</h1>
-        <Button asChild variant="default">
-          <Link href="/news/create">
-            <PlusCircle className="mr-2 h-5 w-5" /> Create Post
-          </Link>
-        </Button>
+  const PublicHeader = () => (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
+        <Logo />
+        <nav className="flex items-center gap-4">
+          <Button variant="ghost" asChild>
+            <Link href="/">Home</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/clubs-directory">Clubs</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/events">Events</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">Sign Up</Link>
+          </Button>
+        </nav>
       </div>
+    </header>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      {!user && <PublicHeader />}
+      <div className="container mx-auto py-2">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <Rss className="h-8 w-8 text-primary mr-3" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">News & Announcements</h1>
+          </div>
+          {user && (user.role === 'super_admin' || user.role === 'sdo_admin') && (
+            <Button asChild variant="default">
+              <Link href="/news/create">
+                <PlusCircle className="mr-2 h-5 w-5" /> Create Post
+              </Link>
+            </Button>
+          )}
+        </div>
       <p className="text-muted-foreground mb-6">
         Stay updated with the latest news, announcements, and stories from campus clubs.
       </p>
@@ -109,6 +144,7 @@ export default function NewsfeedPage() {
           <p className="text-sm text-muted-foreground">Check back later for updates from campus clubs.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -1,48 +1,53 @@
 
+"use client";
+
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Users, Loader2 } from "lucide-react";
+import { PlusCircle, Users, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import type { ClubCategory } from "@/types";
+import { StudentAssignment } from "@/components/clubs/student-assignment";
 
 const createClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
-  description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }),
-  bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
-  meetingSchedule: z.string().max(100).optional(),
 });
 
 type CreateClubFormValues = z.infer<typeof createClubFormSchema>;
 
 export default function CreateClubPage() {
   const { toast } = useToast();
+  const { token, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [categories, setCategories] = useState<ClubCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [createdClub, setCreatedClub] = useState<any>(null);
+  const [showStudentAssignment, setShowStudentAssignment] = useState(false);
 
   const form = useForm<CreateClubFormValues>({
     resolver: zodResolver(createClubFormSchema),
     defaultValues: {
       name: "",
-      description: "",
-      logoUrl: "",
-      bannerImageUrl: "",
-      meetingSchedule: "",
+      categoryId: "",
     },
   });
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !token) {
+      router.push('/login');
+      return;
+    }
+
     const fetchCategories = async () => {
       try {
         const res = await fetch('/api/club-categories');
@@ -55,14 +60,24 @@ export default function CreateClubPage() {
         setIsLoadingCategories(false);
       }
     };
-    fetchCategories();
-  }, [toast]);
+    
+    if (token) {
+      fetchCategories();
+    }
+  }, [token, toast, router, authLoading]);
 
   async function onSubmit(data: CreateClubFormValues) {
     try {
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
       const response = await fetch('/api/clubs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(data),
       });
 
@@ -75,10 +90,12 @@ export default function CreateClubPage() {
 
       toast({
         title: "Club Created Successfully!",
-        description: `Your new club, ${data.name}, has been created.`,
+        description: `Your new club, ${data.name}, has been created. You can now send invitations to students to become club leaders.`,
       });
 
-      router.push(`/clubs/${newClub.slug}`);
+      // Store the created club and show student assignment
+      setCreatedClub(newClub);
+      setShowStudentAssignment(true);
     } catch (error) {
       toast({
         title: "Creation Failed",
@@ -88,22 +105,91 @@ export default function CreateClubPage() {
     }
   }
 
+  const goToClubPage = () => {
+    if (createdClub) {
+      router.push(`/clubs/${createdClub.slug}`);
+    }
+  };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show student assignment if club was created
+  if (showStudentAssignment && createdClub) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Club Created Successfully!</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={goToClubPage} variant="outline">
+              View Club Page
+            </Button>
+            <Button 
+              onClick={() => {
+                setCreatedClub(null);
+                setShowStudentAssignment(false);
+                form.reset();
+              }} 
+              variant="secondary"
+            >
+              Create Another Club
+            </Button>
+          </div>
+        </div>
+        
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+          <div className="text-center">
+            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-green-800 mb-2">Club Created Successfully!</h3>
+            <p className="text-sm text-green-700 mb-4">
+              Your club <strong>{createdClub.name}</strong> has been created. Now assign a student as the club leader.
+            </p>
+            
+            <StudentAssignment
+              clubId={createdClub.id}
+              clubName={createdClub.name}
+              onAssignmentComplete={() => {
+                setCreatedClub(null);
+                setShowStudentAssignment(false);
+                form.reset();
+              }}
+            />
+            
+            <p className="text-xs text-green-600">
+              Search for a student and assign them as the club leader. The student's role will automatically be updated to "club_lead".
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center mb-6">
         <Users className="h-8 w-8 text-primary mr-3" />
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Propose a New Club</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Club (Admin Only)</h1>
       </div>
-      <p className="text-muted-foreground mb-8">
-        Fill out the form below to start a new club. Your proposal will be reviewed.
-      </p>
+
       <Card className="w-full max-w-2xl mx-auto shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <PlusCircle className="h-6 w-6 text-primary" />
-            Club Proposal Form
-          </CardTitle>
-          <CardDescription>Provide details about the club you want to create.</CardDescription>
+                     <CardTitle className="text-2xl flex items-center gap-2">
+             <PlusCircle className="h-6 w-6 text-primary" />
+             Create New Club
+           </CardTitle>
+          <CardDescription>Enter the club name and select a category to get started.</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -116,19 +202,6 @@ export default function CreateClubPage() {
                     <FormLabel>Club Name</FormLabel>
                     <FormControl>
                       <Input placeholder="E.g., Awesome Astronomy Club" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Club Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Tell us all about your club's mission, activities, and goals." {...field} rows={4} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -158,54 +231,13 @@ export default function CreateClubPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="logoUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/logo.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Link to an image for your club's logo.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bannerImageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Banner Image URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/banner.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Link to a banner image for your club page.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="meetingSchedule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Meeting Schedule (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g., Every Tuesday at 5 PM in Room 101" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
             <CardFooter>
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingCategories}>
-                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting...</> : "Submit Proposal"}
+                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : "Create Club"}
               </Button>
             </CardFooter>
           </form>

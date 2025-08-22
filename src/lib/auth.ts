@@ -28,3 +28,29 @@ export function getAuthFromRequest(req: NextRequest): DecodedToken | null {
     return null;
   }
 }
+
+export async function verifyAuth(req: NextRequest) {
+  const auth = getAuthFromRequest(req);
+  if (!auth) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  // Get user details from database
+  const prisma = (await import('@/lib/prisma')).default;
+  const user = await prisma.user.findUnique({
+    where: { id: auth.userId },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    return { success: false, message: 'User not found' };
+  }
+
+  return { success: true, user };
+}

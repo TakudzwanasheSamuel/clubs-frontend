@@ -10,9 +10,9 @@ interface Params {
   };
 }
 
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     const auth = getAuthFromRequest(request); // Check for auth status
 
     const club = await prisma.club.findUnique({
@@ -84,20 +84,20 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(formattedClub);
   } catch (error) {
-    console.error(`Get Club (slug: ${params.slug}) Error:`, error);
+    console.error(`Get Club Error:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 // PUT update a club
-export async function PUT(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const originalClub = await prisma.club.findUnique({ where: { slug } });
     if (!originalClub) {
       return new NextResponse('Club not found', { status: 404 });
@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(updatedClub);
   } catch (error) {
-    console.error(`Update Club (slug: ${slug}) Error:`, error);
+    console.error(`Update Club Error:`, error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return new NextResponse('A club with this name already exists', { status: 409 });
     }
@@ -146,14 +146,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 // DELETE a club
-export async function DELETE(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const club = await prisma.club.findUnique({ where: { slug } });
 
     if (!club) {
@@ -171,7 +171,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     return new NextResponse(null, { status: 204 }); // No Content
   } catch (error) {
-    console.error(`Delete Club (slug: ${slug}) Error:`, error);
+    console.error(`Delete Club Error:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

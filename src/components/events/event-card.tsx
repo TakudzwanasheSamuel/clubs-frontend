@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { CalendarDays, MapPin, Tag, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { DEFAULT_IMAGES } from '@/lib/constants';
 
 type EventCardProps = {
   event: Event;
@@ -20,18 +21,15 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
-      {event.coverImageUrl && (
-        <div className="w-full h-48 relative">
-          <Image
-            src={event.coverImageUrl}
-            alt={`${event.title} cover image`}
-            layout="fill"
-            objectFit="cover"
-            className="rounded-t-lg"
-            data-ai-hint="event cover"
-          />
-        </div>
-      )}
+      <div className="w-full h-48 relative">
+        <Image
+          src={event.coverImageUrl || DEFAULT_IMAGES.EVENT_COVER}
+          alt={`${event.title} cover image`}
+          fill
+          className="rounded-t-lg object-cover"
+          data-ai-hint="event cover"
+        />
+      </div>
       <CardHeader className="p-4">
         <Link href={`/events/${event.slug}`}>
           <CardTitle className="text-xl font-semibold text-primary hover:underline line-clamp-2">

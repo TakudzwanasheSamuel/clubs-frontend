@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ThumbsUp, MessageCircle, CalendarDays, UserCircle, Tag } from 'lucide-react';
+import { DEFAULT_IMAGES } from '@/lib/constants';
 
 type PostCardProps = {
   post: Post;
@@ -21,18 +22,15 @@ export function PostCard({ post }: PostCardProps) {
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
-      {post.featuredImageUrl && (
-        <div className="w-full h-56 relative">
-          <Image
-            src={post.featuredImageUrl}
-            alt={`${post.title} featured image`}
-            layout="fill"
-            objectFit="cover"
-            className="rounded-t-lg"
-            data-ai-hint="news article"
-          />
-        </div>
-      )}
+      <div className="w-full h-56 relative">
+        <Image
+          src={post.featuredImageUrl || DEFAULT_IMAGES.NEWS_FEATURED}
+          alt={`${post.title} featured image`}
+          fill
+          className="rounded-t-lg object-cover"
+          data-ai-hint="news article"
+        />
+      </div>
       <CardHeader className="p-4">
         <Badge variant="outline" className="w-fit mb-2 capitalize">{post.type.replace('_', ' ')}</Badge>
         <Link href={`/news/${post.slug}`}>
@@ -42,7 +40,7 @@ export function PostCard({ post }: PostCardProps) {
         </Link>
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
           <Avatar className="h-6 w-6">
-            <AvatarImage src={post.author.avatarUrl} alt={post.author.name} />
+            <AvatarImage src={post.author.avatarUrl || DEFAULT_IMAGES.POST_AVATAR} alt={post.author.name} />
             <AvatarFallback>
               <UserCircle className="h-5 w-5" />
             </AvatarFallback>

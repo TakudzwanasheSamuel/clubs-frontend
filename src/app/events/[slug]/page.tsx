@@ -1,3 +1,4 @@
+"use client";
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -77,7 +78,6 @@ export default function EventDetailPage() {
     );
   }
 
-  const club = event.club; // The API now provides the nested club object
   const eventDate = new Date(event.date);
   const formattedDate = eventDate.toLocaleDateString(undefined, {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -152,16 +152,14 @@ export default function EventDetailPage() {
                   </h3>
                   <p className="text-muted-foreground">{event.location}</p>
                 </div>
-                {club && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
-                      <Users className="w-5 h-5 mr-2 text-primary" /> Hosted By
-                    </h3>
-                    <Link href={`/clubs/${club.slug}`} className="text-primary hover:underline font-medium">
-                      {club.name}
-                    </Link>
-                  </div>
-                )}
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-primary" /> Hosted By
+                  </h3>
+                  <Link href={`/clubs/${event.clubId}`} className="text-primary hover:underline font-medium">
+                    {event.clubName}
+                  </Link>
+                </div>
               </div>
 
               <div className="mt-8">
@@ -194,22 +192,19 @@ export default function EventDetailPage() {
         </div>
 
         <div className="space-y-6">
-          {club && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold">About {club.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3 mb-3">
-                  <Image src={club.logoUrl} alt={`${club.name} logo`} width={50} height={50} className="rounded-md"/>
-                  <p className="text-sm text-muted-foreground line-clamp-3">{club.description.substring(0,100)}...</p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/clubs/${club.slug}`}>Visit Club Page</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">About {event.clubName}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                This event is hosted by {event.clubName}.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/clubs/${event.clubId}`}>Visit Club Page</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

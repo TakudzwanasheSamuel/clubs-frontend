@@ -1,41 +1,54 @@
 // src/app/api/posts/route.ts
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthFromRequest } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 
-// GET all posts
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Verify authentication and admin role
+    const auth = getAuthFromRequest(request);
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    // Get user details from database
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return new NextResponse('User not found', { status: 404 });
+    }
+    
+    // Only super_admin and sdo_admin can view all posts
+    if (user.role !== 'super_admin' && user.role !== 'sdo_admin') {
+      return new NextResponse('Forbidden: Only administrators can view all posts', { status: 403 });
+    }
+
+    // Fetch all posts with club information
     const posts = await prisma.post.findMany({
       include: {
         club: {
           select: {
+            id: true,
             name: true,
             slug: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        publishDate: 'desc',
-      }
+        createdAt: 'desc',
+      },
     });
 
-    // Reshape data to match frontend `Post` type
-    const formattedPosts = posts.map(post => ({
-      ...post,
-      clubName: post.club.name,
-      publishDate: post.publishDate.toISOString().split('T')[0],
-      // The original type had an author object
-      author: {
-        name: post.authorName,
-        avatarUrl: post.authorAvatarUrl
-      }
-    }));
-
-    return NextResponse.json(formattedPosts);
+    return NextResponse.json(posts);
   } catch (error) {
-    console.error('Get Posts Error:', error);
+    console.error('Error fetching posts:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

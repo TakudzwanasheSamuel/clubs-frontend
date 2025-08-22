@@ -14,14 +14,16 @@ import { Edit, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Club, ClubCategory } from "@/types";
 import { useParams, useRouter, notFound } from "next/navigation";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { IMAGE_DIMENSIONS } from "@/lib/constants";
 
 // Define a schema that includes the social links for a more complete update
 const editClubFormSchema = z.object({
   name: z.string().min(3, { message: "Club name must be at least 3 characters." }).max(100),
   description: z.string().min(20, { message: "Description must be at least 20 characters." }).max(500),
   categoryId: z.string({ required_error: "Please select a category." }),
-  logoUrl: z.string().url({ message: "Please enter a valid URL for the logo." }),
-  bannerImageUrl: z.string().url({ message: "Please enter a valid URL for the banner." }).optional().or(z.literal('')),
+  logoUrl: z.string().optional(),
+  bannerImageUrl: z.string().optional(),
   meetingSchedule: z.string().max(100).optional(),
   // social links are not part of the form, but could be added
 });
@@ -207,11 +209,13 @@ export default function EditClubPage() {
                 name="logoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/logo.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Link to an image for your club's logo.</FormDescription>
+                    <ImageUpload
+                      type="logo"
+                      currentUrl={field.value}
+                      onUploadComplete={field.onChange}
+                      label="Club Logo"
+                      description={`Upload a logo image for your club. Recommended size: ${IMAGE_DIMENSIONS.CLUB_LOGO.width}x${IMAGE_DIMENSIONS.CLUB_LOGO.height}px`}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -221,11 +225,13 @@ export default function EditClubPage() {
                 name="bannerImageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Banner Image URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/banner.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Link to a banner image for your club page.</FormDescription>
+                    <ImageUpload
+                      type="banner"
+                      currentUrl={field.value}
+                      onUploadComplete={field.onChange}
+                      label="Banner Image (Optional)"
+                      description={`Upload a banner image for your club page. Recommended size: ${IMAGE_DIMENSIONS.CLUB_BANNER.width}x${IMAGE_DIMENSIONS.CLUB_BANNER.height}px`}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}

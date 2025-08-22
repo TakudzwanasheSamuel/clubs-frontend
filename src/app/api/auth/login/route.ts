@@ -7,14 +7,24 @@ import jwt from 'jsonwebtoken';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, registrationNumber, password } = body;
 
-    if (!email || !password) {
-      return new NextResponse('Email and password are required', { status: 400 });
+    if (!password) {
+      return new NextResponse('Password is required', { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    if (!email && !registrationNumber) {
+      return new NextResponse('Email or registration number is required', { status: 400 });
+    }
+
+    // Find user by email or registration number
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email || undefined },
+          { registrationNumber: registrationNumber || undefined }
+        ]
+      },
     });
 
     if (!user) {

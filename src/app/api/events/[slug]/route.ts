@@ -10,9 +10,9 @@ interface Params {
   };
 }
 
-export async function GET(request: Request, { params }: Params) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     const event = await prisma.event.findUnique({
       where: { slug },
@@ -40,20 +40,20 @@ export async function GET(request: Request, { params }: Params) {
 
     return NextResponse.json(formattedEvent);
   } catch (error) {
-    console.error(`Get Event (slug: ${params.slug}) Error:`, error);
+    console.error(`Get Event Error:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 // PUT update an event
-export async function PUT(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const originalEvent = await prisma.event.findUnique({
       where: { slug },
       include: { club: true }
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     return NextResponse.json(updatedEvent);
   } catch (error) {
-    console.error(`Update Event (slug: ${slug}) Error:`, error);
+    console.error(`Update Event Error:`, error);
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return new NextResponse('An event with this title already exists', { status: 409 });
     }
@@ -103,14 +103,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 // DELETE an event
-export async function DELETE(request: NextRequest, { params }: Params) {
-  const { slug } = params;
-  const auth = getAuthFromRequest(request);
-  if (!auth) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
+    const auth = getAuthFromRequest(request);
+    if (!auth) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const event = await prisma.event.findUnique({
       where: { slug },
       include: { club: true }
@@ -131,7 +131,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error(`Delete Event (slug: ${slug}) Error:`, error);
+    console.error(`Delete Event Error:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
