@@ -47,6 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     let isMember = false;
     if (auth) {
+      console.log(`Checking membership for user ${auth.userId} in club ${club.id}`);
       const membership = await prisma.membership.findUnique({
         where: {
           userId_clubId: {
@@ -56,6 +57,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         },
       });
       isMember = !!membership;
+      console.log(`Membership found: ${!!membership}`);
+    } else {
+      console.log('No auth provided to club API');
     }
 
     // Reshape data to match frontend expectations

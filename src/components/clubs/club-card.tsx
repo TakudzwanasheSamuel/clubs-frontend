@@ -61,8 +61,8 @@ export function ClubCard({ club }: ClubCardProps) {
         )}
       </CardContent>
       <CardFooter className="p-4 border-t">
-        <Button asChild variant="default" size="sm" className="w-full bg-primary hover:bg-primary/90">
-          <Link href={`/clubs/${club.slug}`}>View Details</Link>
+        <Button asChild variant="default" size="sm" className="w-full bg-primary hover:bg-primary/90" disabled={!club.slug}>
+          <Link href={club.slug ? `/clubs/${club.slug}` : '#'}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>

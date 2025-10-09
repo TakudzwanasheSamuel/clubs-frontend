@@ -10,12 +10,13 @@ import { Edit, PlusCircle, Eye, Users, Settings, ListChecks, Loader2 } from 'luc
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
+import { DEFAULT_IMAGES } from '@/lib/constants';
 
 const ManagedClubCard = ({ club }: { club: Club }) => (
   <Card className="shadow-xl mb-8">
     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6 bg-card-foreground/5 rounded-t-lg">
       <Image
-        src={club.logoUrl}
+        src={club.logoUrl && club.logoUrl.trim() !== '' ? club.logoUrl : DEFAULT_IMAGES.CLUB_LOGO}
         alt={`${club.name} logo`}
         width={80}
         height={80}

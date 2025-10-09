@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
     // Fetch all published events with club information
     const events = await prisma.event.findMany({
       where: {
-        // Only show upcoming events (not cancelled or past)
+        // Show all events except cancelled ones for testing
         status: {
-          in: ['upcoming', 'ongoing']
+          not: 'cancelled'
         }
       },
       include: {

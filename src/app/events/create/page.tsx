@@ -1,4 +1,6 @@
 
+"use client";
+
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +15,10 @@ import { CalendarPlus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Club } from "@/types";
+import { useAuth } from "@/contexts/auth-context";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 const createEventFormSchema = z.object({
   title: z.string().min(5, { message: "Event title must be at least 5 characters." }).max(150),
@@ -29,8 +35,16 @@ type CreateEventFormValues = z.infer<typeof createEventFormSchema>;
 export default function CreateEventPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { token, isLoading: authLoading } = useAuth();
   const [ledClubs, setLedClubs] = useState<Pick<Club, 'id' | 'name' | 'slug'>[]>([]);
   const [isLoadingClubs, setIsLoadingClubs] = useState(true);
+  const timeslots = Array.from({ length: 24 * 2 }, (_, i) => {
+    const hours = Math.floor(i / 2);
+    const minutes = i % 2 === 0 ? "00" : "30";
+    const period = hours < 12 ? "AM" : "PM";
+    const hours12 = hours % 12 === 0 ? 12 : hours % 12;
+    return `${hours12.toString().padStart(1, '0')}:${minutes} ${period}`;
+  });
 
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventFormSchema),
@@ -48,7 +62,9 @@ export default function CreateEventPage() {
     const fetchLedClubs = async () => {
       setIsLoadingClubs(true);
       try {
-        const res = await fetch('/api/my-clubs/led');
+        const res = await fetch('/api/my-clubs/led', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) throw new Error('Failed to fetch your clubs');
         const data = await res.json();
         setLedClubs(data);
@@ -61,8 +77,10 @@ export default function CreateEventPage() {
         setIsLoadingClubs(false);
       }
     };
-    fetchLedClubs();
-  }, [toast]);
+    if (!authLoading && token) {
+      fetchLedClubs();
+    }
+  }, [toast, token, authLoading]);
 
   async function onSubmit(data: CreateEventFormValues) {
     try {
@@ -94,6 +112,16 @@ export default function CreateEventPage() {
 
   return (
     <div className="container mx-auto py-8">
+      {authLoading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading authentication...</p>
+        </div>
+      ) : !token ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">You need to be logged in and be a club lead to create an event.</p>
+        </div>
+      ) : (
+      <>
       <div className="flex items-center mb-6">
         <CalendarPlus className="h-8 w-8 text-primary mr-3" />
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Event</h1>
@@ -142,15 +170,36 @@ export default function CreateEventPage() {
                 <FormField
                   control={form.control}
                   name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <Input type="text" placeholder="YYYY-MM-DD" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedDate = field.value ? new Date(field.value) : undefined;
+                    const formatDate = (date: Date) => {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      return `${y}-${m}-${d}`;
+                    };
+                    return (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" type="button" className="w-full justify-start">
+                              {selectedDate ? field.value : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={(date) => date && field.onChange(formatDate(date))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
@@ -158,9 +207,18 @@ export default function CreateEventPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Time</FormLabel>
-                      <FormControl>
-                        <Input type="text" placeholder="HH:MM AM/PM" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-64">
+                          {timeslots.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -208,11 +266,15 @@ export default function CreateEventPage() {
                 name="coverImageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cover Image URL (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/event-cover.png" {...field} />
-                    </FormControl>
-                    <FormDescription>Link to an image for your event's listing.</FormDescription>
+                    <FormLabel>Cover Image (Optional)</FormLabel>
+                    <FormDescription>Upload a cover image for your event.</FormDescription>
+                    <ImageUpload
+                      type="banner"
+                      currentUrl={field.value || undefined}
+                      onUploadComplete={(url) => form.setValue("coverImageUrl", url)}
+                      label="Upload Cover Image"
+                      description="Recommended size: 1200x600px. Max 5MB."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -229,6 +291,8 @@ export default function CreateEventPage() {
           </form>
         </Form>
       </Card>
+      </>
+    )}
     </div>
   );
 }

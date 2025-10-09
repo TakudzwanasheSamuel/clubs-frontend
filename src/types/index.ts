@@ -21,6 +21,7 @@ export type Club = {
   meetingSchedule?: string;
   memberCount: number;
   userId?: string; // ID of the user who created/manages the club
+  isMember?: boolean; // Whether the current user is a member of this club
 };
 
 export type Event = {

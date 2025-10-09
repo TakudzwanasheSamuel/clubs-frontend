@@ -45,6 +45,7 @@ export async function GET() {
       try {
         return {
           id: club.id,
+          slug: club.slug, // Add the missing slug field
           name: club.name,
           description: club.description,
           categoryId: club.categoryId,

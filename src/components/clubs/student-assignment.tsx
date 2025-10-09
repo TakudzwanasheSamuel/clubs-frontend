@@ -82,6 +82,18 @@ export function StudentAssignment({ clubId, clubName, onAssignmentComplete }: St
   const assignStudent = async (student: Student) => {
     setIsAssigning(true);
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
+      console.log('Attempting to assign student:', { 
+        clubId, 
+        studentId: student.id,
+        hasToken: !!token 
+      });
+
       const response = await fetch('/api/clubs/assign-leader', {
         method: 'POST',
         headers: {
@@ -95,8 +107,17 @@ export function StudentAssignment({ clubId, clubName, onAssignmentComplete }: St
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to assign student');
+        let errorMessage = 'Failed to assign student';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error('API Error Response:', errorData);
+        } catch (e) {
+          const text = await response.text();
+          console.error('Failed to parse error response:', { status: response.status, text });
+          errorMessage = `Error ${response.status}: ${response.statusText || 'Unknown error'}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

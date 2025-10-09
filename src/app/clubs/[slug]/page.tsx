@@ -38,12 +38,25 @@ export default function ClubDetailPage() {
 
     const fetchClubData = async () => {
       try {
-        const response = await fetch(`/api/clubs/${slug}`);
+        const token = localStorage.getItem('auth_token');
+        const headers: HeadersInit = {};
+        
+        // Include auth header if user is logged in
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`/api/clubs/${slug}`, {
+          headers
+        });
+        
         if (!response.ok) {
           if (response.status === 404) notFound();
           throw new Error('Failed to fetch club data');
         }
+        
         const data: Club = await response.json();
+        console.log('Club data received:', { clubName: data.name, isMember: data.isMember });
         setClub(data);
         setIsMember(data.isMember || false);
       } catch (error) {
@@ -66,8 +79,17 @@ export default function ClubDetailPage() {
   const handleJoinClub = async () => {
     setIsProcessingJoin(true);
     try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('You must be logged in to join a club');
+      }
+
       const response = await fetch(`/api/clubs/${slug}/membership`, {
         method: isMember ? 'DELETE' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
 
       if (!response.ok) {

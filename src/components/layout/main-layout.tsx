@@ -36,7 +36,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     setMounted(true);
   }, []);
 
-  // Define public pages where navigation should be hidden for unauthenticated users
+  // Define public pages that can be viewed without authentication
   const publicPages = [
     '/',
     '/login', 
@@ -47,29 +47,32 @@ export function MainLayout({ children }: MainLayoutProps) {
   ];
   
   // Check if current path matches public page patterns (including dynamic routes)
-  const isPublicPage = publicPages.includes(pathname) || 
-    pathname.startsWith('/clubs/') ||
-    pathname.startsWith('/events/') ||
-    pathname.startsWith('/news/');
+  // Exclude creation pages from being treated as public so full navigation shows
+  const isEventCreate = pathname === '/events/create' || pathname.startsWith('/events/create');
+  const isClubCreate = pathname === '/clubs/create' || pathname.startsWith('/clubs/create');
+  const isNewsCreate = pathname === '/news/create' || pathname.startsWith('/news/create');
 
-  // Hide navigation for unauthenticated users on all pages
+  const isPublicDynamic = (
+    (pathname.startsWith('/clubs/') && !isClubCreate) ||
+    (pathname.startsWith('/events/') && !isEventCreate) ||
+    (pathname.startsWith('/news/') && !isNewsCreate)
+  );
+
+  const isPublicPage = publicPages.includes(pathname) || isPublicDynamic;
+
+  // Navigation Logic:
+  // - Unauthenticated users: No navigation on any page
+  // - Authenticated users: Full navigation (sidebar + header + mobile nav) on ALL pages
   const shouldHideNavigation = !user && !isLoading;
 
-  // Hide sidebar on public pages (for both authenticated and unauthenticated users)
-  const shouldHideSidebar = isPublicPage;
-
-  // If user is not authenticated, show only the content without navigation
-  if (shouldHideNavigation) {
+  // If user is not authenticated and on a public page, show only the content without navigation
+  if (shouldHideNavigation && isPublicPage) {
     return <main className="flex-1">{children}</main>;
   }
 
-  // If on a public page, show content without sidebar but with header (for authenticated users)
-  if (shouldHideSidebar) {
-    return (
-      <div className="min-h-screen bg-background">
-        <main className="flex-1">{children}</main>
-      </div>
-    );
+  // If user is not authenticated and on a private page, redirect to login (this shouldn't happen with route protection)
+  if (shouldHideNavigation && !isPublicPage) {
+    return <main className="flex-1">{children}</main>;
   }
 
 
@@ -93,11 +96,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       </Sidebar>
       <SidebarInset>
         <Header />
-        <main className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-secondary/50 ${isMobile && user && !isPublicPage ? 'pb-20' : 'md:pb-8'}`}>
+        <main className={`flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-secondary/50 ${isMobile && user ? 'pb-20' : 'md:pb-8'}`}>
           {children}
         </main>
-        {/* Render MobileBottomNavigation only on mobile, if mounted, user is authenticated, and not on public pages */}
-        {isMobile && mounted && user && !isPublicPage && <MobileBottomNavigation />}
+        {/* Render MobileBottomNavigation only on mobile, if mounted, and user is authenticated */}
+        {isMobile && mounted && user && <MobileBottomNavigation />}
       </SidebarInset>
     </SidebarProvider>
   );

@@ -4,10 +4,20 @@ import { getAuthFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the authorization header
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+    
+    if (!token) {
+      console.error('No token provided in Authorization header');
+      return new NextResponse('Unauthorized - No token provided', { status: 401 });
+    }
+
     // Verify authentication and admin role
-    const auth = getAuthFromRequest(request);
+    const auth = await getAuthFromRequest(request);
     if (!auth) {
-      return new NextResponse('Unauthorized', { status: 401 });
+      console.error('Invalid or expired token');
+      return new NextResponse('Unauthorized - Invalid or expired token', { status: 401 });
     }
 
     // Get user details from database
@@ -33,8 +43,15 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!clubId || !studentId) {
+      console.error('Missing required fields', { clubId, studentId });
       return new NextResponse('Missing required fields: clubId, studentId', { status: 400 });
     }
+
+    console.log('Processing assignment request', { 
+      adminId: auth.userId, 
+      clubId, 
+      studentId 
+    });
 
     // Check if club exists
     const club = await prisma.club.findUnique({
@@ -49,9 +66,21 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Club not found', { status: 404 });
     }
 
-    // Check if club already has a lead
+    // If club already has a lead, first demote the current leader
     if (club.leadId) {
-      return new NextResponse('This club already has a leader', { status: 400 });
+      console.log('Club already has a leader, demoting current leader:', { 
+        clubId: club.id, 
+        currentLeadId: club.leadId
+      });
+      
+      // Demote current leader to student role
+      await prisma.user.update({
+        where: { id: club.leadId },
+        data: { role: 'student' },
+        select: { id: true, email: true }
+      });
+      
+      console.log('Successfully demoted previous leader');
     }
 
     // Check if student exists and is actually a student
@@ -71,20 +100,42 @@ export async function POST(request: NextRequest) {
     }
 
     if (student.role !== 'student') {
+      console.log('Selected user is not a student:', { 
+        userId: student.id, 
+        currentRole: student.role,
+        requiredRole: 'student' 
+      });
       return new NextResponse('Selected user is not a student', { status: 400 });
     }
 
-    // Update student role to club_lead
-    await prisma.user.update({
-      where: { id: studentId },
-      data: { role: 'club_lead' }
-    });
+    // Use a transaction to ensure both updates succeed or fail together
+    const [updatedUser, updatedClub] = await prisma.$transaction([
+      // Update user role to club_lead
+      prisma.user.update({
+        where: { id: studentId },
+        data: { role: 'club_lead' as const },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      }),
+      // Update club with new lead
+      prisma.club.update({
+        where: { id: clubId },
+        data: { leadId: studentId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          leadId: true
+        }
+      })
+    ]);
 
-    // Update club with new lead
-    await prisma.club.update({
-      where: { id: clubId },
-      data: { leadId: studentId }
-    });
+    console.log('Successfully updated:', { updatedUser, updatedClub });
 
     return NextResponse.json({
       message: 'Club leader assigned successfully!',

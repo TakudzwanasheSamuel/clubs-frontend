@@ -18,6 +18,8 @@ export async function GET() {
         _count: {
           select: {
             members: true,
+            events: true,
+            posts: true,
           },
         },
       },
@@ -39,8 +41,13 @@ export async function GET() {
       instagramUrl: club.instagramUrl,
       meetingSchedule: club.meetingSchedule,
       category: club.category,
-      lead: club.lead,
-      memberCount: club._count.members,
+      leadId: club.lead?.id || null,  // Add leadId for frontend
+      lead: club.lead,                 // Include full lead object
+      _count: {
+        members: club._count.members,
+        events: club._count.events,
+        posts: club._count.posts
+      },
       createdAt: club.createdAt,
       updatedAt: club.updatedAt,
     }));
